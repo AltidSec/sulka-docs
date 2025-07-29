@@ -28,6 +28,12 @@ There are multiple repositories related to Sulka. Here you can find the listing 
   This repository is the distro part of the Sulka.
   It defines the packages that get installed into the user space, and the hardening configurations for the packages.
 
+* `Sulka documentation <https://codeberg.org/AltidSec/sulka-docs>`_
+
+  This is the documentation repository for Sulka.
+  It is also the source for this very page you are reading!
+  If you spot missing or incorrect documentation, please raise an issue in this repository.
+
 * `Sulka tests <https://codeberg.org/AltidSec/sulka-tests>`_
 
   This is the test repository for Sulka.
