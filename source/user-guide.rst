@@ -32,39 +32,50 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
 
 * ``acct``
+
   acct is the GNU Accounting Utilities package that is used to perform process monitoring. This can be used to check what processes have been started in the system, and when the processes have been started.
 
 * ``aide``
+
   AIDE stands for Advanced Intrusion Detection Environment, and it is used as a file integrity monitor in Sulka. With periodic checks, AIDE can detect changes in files and report these.
 
 * ``audit``
+
   audit is an auditing package that can be used to watch files and syscalls. These actions taken on these files or syscalls can then be logged into the auditing log, detecting undesired behavior.
 
 * ``cronie``
+
   Cronie is a system utility that is used to run tasks periodically. This is useful for system monitoring, when activities are checked at specific times.
 
 * ``dpkg-start-stop``
+
   This is a dependency for the ``audit`` init script, as the init script relies on options that are not available on Busybox's `start-stop-daemon`.
 
 * ``nftables``
+
   nftables is the packet filter / firewall used in Sulka.
-  Firewall is a crucial part of the network security, and `nftables` provides a good performance and efficiency with a unified framework for packet filtering.
+  Firewall is a crucial part of the network security, and ``nftables`` provides a good performance and efficiency with a unified framework for packet filtering.
   Additionally, nftables is well-integrated with modern Linux kernels.
 
 * ``nftables-configuration``
+
   nftables-configuration is a service that loads the firewall rules during boot.
 
 * ``packagegroup-core-boot``
+
   This is the core packagegroup from Yocto project that includes the essentials for the system.
 
 * ``passwdqc``
+
   passwdqc is a package that provides password quality enforcement. This should prevent users from using insecure passwords.
 
 * ``sudo``
+
   sudo is the package that is used to allow service user to perform actions with root capabilities.
   Since the root user is locked in Sulka, it is recommended to install sudo if there is a service user in the system
 
 * ``sysstat``
+
   sysstat is used for periodically checking the system resource usage to detect anomalous activity in the system.
 
 Firewall
@@ -110,7 +121,7 @@ To remove all the monitoring packages from the image, you should remove ``packag
 
   DISTRO_EXTRA_RDEPENDS:remove = "packagegroup-sulka-monitoring"
 
-This could be done for example in the `local.conf`.
+This could be done for example in the ``local.conf``.
 
 Configuration Variables
 ***********************
