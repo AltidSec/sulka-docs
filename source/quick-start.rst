@@ -28,7 +28,7 @@ Quick Start
 
    This hashes the password "test" and prepares the resulting hash for pasting into a Yocto configuration file.
 
-#. Add the password to `kas-sulka-configuration.yml`. Escape the four dollar signs in hash with ``\`` if not done already:
+#. Add the password to ``kas-sulka-configuration.yml``. Escape the four dollar signs in hash with ``\`` if not done already:
 
    .. code-block::
 
