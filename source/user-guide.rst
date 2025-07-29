@@ -67,6 +67,27 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 * ``sysstat``
   sysstat is used for periodically checking the system resource usage to detect anomalous activity in the system.
 
+Firewall
+********
+
+Sulka comes with ``nftables`` firewall installed and configured.
+By default, the firewall drops all incoming and outgoing traffic.
+There are a few different firewall templates that you can use to configure the firewall behavior.
+The firewall template is selected with the ``SULKA_NFTABLES_CONF`` BitBake configuration variable.
+You can either use your own configuration file and add it to the build by appending to the ``nftables-configuration`` recipe, or use one of the following configuration samples:
+
+* ``nftables-drop-everything.conf``
+
+  Drop all traffic: incoming, outgoing, and forwarding.
+
+* ``nftables-allow-established-lo-outgoing.conf``
+
+  Allow all outgoing and incoming established traffic (e.g., responses to outgoing traffic), and loopback traffic.
+
+* ``nftables-allow-established-lo-ssh-icmp-outgoing.conf``
+
+  Allow all outgoing and incoming established traffic (e.g., responses to outgoing traffic), ICMP (e.g., ping), SSH, and loopback traffic. Additionally, log dropped incoming traffic.
+
 Monitoring
 **********
 
@@ -114,6 +135,11 @@ This chapter covers the configuration items in Sulka. The default value for each
   Currently, this option enables the following options:
 
   * ``SULKA_EXPIRE_PASSWORDS``
+
+* ``SULKA_NFTABLES_CONF`` ("nftables-drop-everything.conf")
+
+  The firewall configuration template that gets installed to the system and is used as the default firewall configuration.
+  See :ref:`Firewall` for more information.
 
 * ``SULKA_SSH_PORT`` (22)
 
