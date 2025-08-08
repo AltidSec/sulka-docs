@@ -147,10 +147,23 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   * ``SULKA_EXPIRE_PASSWORDS``
 
+* ``SULKA_INSTALL_SSH_KEYS`` (0)
+
+  Install SSH public key information into the firmware image.
+  The key is searched from ``${SULKA_SSH_KEYS_DIR}`` directory, and is assumed to have a name in the form of ``${SULKA_SERVICEUSER_USERNAME}-auth-key.pub``.
+
+  Note that installing the SSH key information to the firmware during build may pose a security risk.
+  If the private key leaks, all the devices using the same firmware image become vulnerable.
+  Consider generating unique SSH keys for each device if that is possible for your use case.
+
 * ``SULKA_NFTABLES_CONF`` ("nftables-drop-everything.conf")
 
   The firewall configuration template that gets installed to the system and is used as the default firewall configuration.
   See :ref:`Firewall` for more information.
+
+* ``SULKA_SSH_KEYS_DIR`` ("${TOPDIR}/../auth-keys")
+
+  The directory where the public SSH key will be looked from if ``SULKA_INSTALL_SSH_KEYS`` is set to ``1``.
 
 * ``SULKA_SSH_PORT`` (22)
 
