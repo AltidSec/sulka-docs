@@ -21,9 +21,9 @@ Sulka aims to provide support for the common alternatives related to Linux syste
 Init Managers
 =============
 
-Currently, Sulka supports sysvinit as the init manager.
-Building for systemd should be possible, but it is not fully supported yet and some packages do not have systemd services created yet.
-Systemd support is planned for the future.
+Currently, Sulka primarily supports sysvinit as the init manager.
+Using systemd as the init manager should be possible, and all the custom initialization scripts have their systemd service counterparts. However, systemd is not actively used and tested, so there may be some things missing.
+More complete systemd support is planned for the future. Please raise an issue in the ``meta-sulka-distro`` repository if getting this is urgent to you.
 
 Installed Packages
 ******************
