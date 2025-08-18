@@ -31,15 +31,15 @@ Installed Packages
 Sulka installs packages as a part of the distro. You can find the packages listed here, along with the explanation of what they do and why they're installed.
 
 
-* ``acct``
+* ``acct`` (installed if monitoring is enabled)
 
   acct is the GNU Accounting Utilities package that is used to perform process monitoring. This can be used to check what processes have been started in the system, and when the processes have been started.
 
-* ``aide``
+* ``aide`` (installed if monitoring is enabled)
 
   AIDE stands for Advanced Intrusion Detection Environment, and it is used as a file integrity monitor in Sulka. With periodic checks, AIDE can detect changes in files and report these.
 
-* ``audit``
+* ``audit`` (installed if monitoring is enabled)
 
   audit is an auditing package that can be used to watch files and syscalls. These actions taken on these files or syscalls can then be logged into the auditing log, detecting undesired behavior.
 
@@ -74,7 +74,7 @@ Sulka installs packages as a part of the distro. You can find the packages liste
   sudo is the package that is used to allow service user to perform actions with root capabilities.
   Since the root user is locked in Sulka, it is recommended to install sudo if there is a service user in the system
 
-* ``sysstat``
+* ``sysstat`` (installed if monitoring is enabled)
 
   sysstat is used for periodically checking the system resource usage to detect anomalous activity in the system.
 
@@ -102,8 +102,20 @@ You can either use your own configuration file and add it to the build by append
 Monitoring
 **********
 
-Sulka installs multiple packages that are used to monitor the system and can be used to detect anomalies.
+Sulka can install multiple packages that are used to monitor the system and can be used to detect anomalies.
+However, these are not installed by default as they require configuration.
 These packages are ``acct``, ``aide``, ``auditd``, and ``sysstat``.
+
+To enable monitoring, set the following flag in your build configuration
+
+.. code-block::
+
+  SULKA_ENABLE_MONITORING = "1"
+
+This could be done for example in the ``local.conf``.
+
+Note that enabling ``SULKA_EXTRA_COMPLIANCY`` option automatically enables the monitoring feature as well.
+
 To get the most of these monitoring capabilities, your system should satisfy the following requirements:
 
 * Persistent logging partition. Logging to volatile locations causes the logs to be lost in case of a power loss or reboot.
@@ -112,16 +124,8 @@ To get the most of these monitoring capabilities, your system should satisfy the
 
 The monitoring can be useful without fulfilling these requirements, but the usefulness may be limited as the logs may be lost before analysis or cannot be analyzed remotely/automatically.
 
-It is recommended that you run a long test with the system running the usual load to see how large the logs grow in your system.
+It is recommended that you run a long test with the system running the usual load to see how large the logs grow in your system and if the system properly rotates the logs.
 After that, you can either configure or disable some of the monitoring functionality as required.
-
-To remove all the monitoring packages from the image, you should remove ``packagegroup-sulka-monitoring`` from ``DISTRO_EXTRA_RDEPENDS`` like this:
-
-.. code-block::
-
-  DISTRO_EXTRA_RDEPENDS:remove = "packagegroup-sulka-monitoring"
-
-This could be done for example in the ``local.conf``.
 
 Configuration Variables
 ***********************
@@ -133,6 +137,12 @@ This chapter covers the configuration items in Sulka. The default value for each
   This option allows enabling or disabling the graphics to reduce kernel attack surface.
   If your device does not have a graphic output, you should be able to leave this to default.
 
+* ``SULKA_ENABLE_MONITORING`` (0)
+
+  Set this option to ``1`` to install ``packagegroup-sulka-monitoring``. This packagegroup contains utilities that can be used to monitor the system.
+  See :ref:`Monitoring` for more information.
+
+
 * ``SULKA_EXPIRE_PASSWORDS`` (0)
 
   Set the passwords to expire in the system.
@@ -141,11 +151,14 @@ This chapter covers the configuration items in Sulka. The default value for each
 
 * ``SULKA_EXTRA_COMPLIANCY`` (0)
 
-  Enable the extra compliancy settings that are required by some audits and compliancy checks.
-  These are options that may make more sense in workstation or server use, but may still be required in embedded side to pass certain checks.
-  Currently, this option enables the following options:
+  Enable the extra compliancy settings that may be required by some audits and compliancy checks.
+  These are options that may make more sense in workstation or server use, or that need some integration work, so they are disabled by default.
+  This option enables the following options:
 
+  * ``SULKA_ENABLE_MONITORING``
   * ``SULKA_EXPIRE_PASSWORDS``
+
+  It is recommended to go through the options that are enabled by ``SULKA_EXTRA_COMPLIANCY``, and enable them manually if enabling the whole ``SULKA_EXTRA_COMPLIANCY`` feature is not possible.
 
 * ``SULKA_INSTALL_SSH_KEYS`` (0)
 
