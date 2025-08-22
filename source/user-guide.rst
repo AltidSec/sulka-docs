@@ -69,6 +69,10 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
   passwdqc is a package that provides password quality enforcement. This should prevent users from using insecure passwords.
 
+* ``rsyslog``
+
+  rsyslog is the logging daemon used in Sulka. It is used to replace Busybox syslog daemon, as that lacks several security features like log signing and secure network transport.
+
 * ``sudo``
 
   sudo is the package that is used to allow service user to perform actions with root capabilities.
