@@ -25,6 +25,15 @@ Currently, Sulka primarily supports sysvinit as the init manager.
 Using systemd as the init manager should be possible, and all the custom initialization scripts have their systemd service counterparts. However, systemd is not actively used and tested, so there may be some things missing.
 More complete systemd support is planned for the future. Please raise an issue in the ``meta-sulka-distro`` repository if getting this is urgent to you.
 
+Mandatory Access Control Modules
+================================
+
+Sulka currently supports SELinux as its mandatory access control module.
+While enabling support for AppArmor is a long-term goal, it is not actively being worked on at the moment.
+You can use AppArmor to harden your own services, but a system-wide hardening policy for AppArmor is not currently available.
+
+For more information about SELinux, see the :ref:`SELinux` section.
+
 Installed Packages
 ******************
 
@@ -131,6 +140,29 @@ The monitoring can be useful without fulfilling these requirements, but the usef
 It is recommended that you run a long test with the system running the usual load to see how large the logs grow in your system and if the system properly rotates the logs.
 After that, you can either configure or disable some of the monitoring functionality as required.
 
+SELinux
+*******
+
+SELinux is the supported mandatory access control module in Sulka, enabling further hardening the system access controls.
+SELinux is enabled by default.
+
+To disable SELinux, add the following to your build configuration (for example, in the ``local.conf``):
+
+.. code-block::
+
+   SULKA_MANDATORY_ACCESS_CONTROL_MODULE = "none"
+
+The default reference policy of the SELinux is set to ``targeted``. 
+This setting aims to protect core services while minimizing disruption to normal system operation.
+
+A few patches have been applied to this reference policy to address certain denial issues.
+These patches can be found from ``recipes-security/refpolicy/refpolicy-targeted``.
+You should review these patches to ensure their changes align with your use case.
+
+You may want to consider switching the policy to stricter ``standard`` for production systems.
+This provides enhanced security, but for example interactive login sessions are limited in functionality.
+Note that the Sulka specific patches apply only to the ``targeted`` refpolicy. If you change the refpolicy you need to edit the recipe files.
+
 Configuration Variables
 ***********************
 
@@ -172,6 +204,16 @@ This chapter covers the configuration items in Sulka. The default value for each
   Note that installing the SSH key information to the firmware during build may pose a security risk.
   If the private key leaks, all the devices using the same firmware image become vulnerable.
   Consider generating unique SSH keys for each device if that is possible for your use case.
+
+* ``SULKA_MANDATORY_ACCESS_CONTROL_MODULE`` ("selinux")
+
+  Set the mandatory access control module to be used in the system.
+
+  Mandatory access control architecture provides more control over the file and process permissions than the regular discretionary access control.
+  This architecture increases the complexity of the system, and can result in problems if the system behavior is unpredicatable or changes often.
+  However, enabling the mandatory access control is usually a good idea.
+
+  Set this to ``none`` to disable the mandatory access control.
 
 * ``SULKA_NFTABLES_CONF`` ("nftables-drop-everything.conf")
 
