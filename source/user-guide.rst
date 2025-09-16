@@ -163,6 +163,28 @@ You may want to consider switching the policy to stricter ``standard`` for produ
 This provides enhanced security, but for example interactive login sessions are limited in functionality.
 Note that the Sulka specific patches apply only to the ``targeted`` refpolicy. If you change the refpolicy you need to edit the recipe files.
 
+Module Signing
+**************
+
+Module signing functionality allows signing kernel modules to prevent unauthorized code from being loaded into the kernel.
+This helps preventing kernel-level attacks, like installing rootkits, keyloggers, or malicious drivers.
+
+The feature is disabled by default, as it breaks the build if no keys are provided.
+However, it is **strongly** recommended that you enable module signing.
+
+To enable the feature, first generate the keys using the ``generate_ima_evm_modsign_keys.sh`` script in `kas-sulka <https://codeberg.org/AltidSec/kas-sulka/src/branch/scarthgap/scripts/generate_ima_evm_modsign_keys.sh>`_.
+Then, enable the key signing feature and add the location to the keys and certificate authority in your build configuration:
+
+.. code-block::
+
+   SULKA_ENABLE_MODULE_SIGNING = "1"
+   MODSIGN_KEY_DIR = "/path/to/generated/keys"
+   IMA_EVM_ROOT_CA = "${MODSIGN_KEY_DIR}/ima-local-ca.pem"
+
+
+Please note that this feature does not sign binary drivers that are not compiled during the build.
+It is possible to sign these kind of drivers, but at the moment it has to be done manually before building the firmware image.
+
 Configuration Variables
 ***********************
 
@@ -172,6 +194,12 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   This option allows enabling or disabling the graphics to reduce kernel attack surface.
   If your device does not have a graphic output, you should be able to leave this to default.
+
+* ``SULKA_ENABLE_MODULE_SIGNING`` (0)
+
+  Set this option to ``1`` to enable module signing.
+  It is strongly recommended to enable this feature, but it is disabled by default as it breaks the build if the signing keys are not provided.
+  See :ref:`Module Signing` for more information on enabling this feature.
 
 * ``SULKA_ENABLE_MONITORING`` (0)
 
