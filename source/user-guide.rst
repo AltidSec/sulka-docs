@@ -193,6 +193,7 @@ This chapter covers the configuration items in Sulka. The default value for each
 * ``SULKA_DISABLE_GRAPHICS`` (1)
 
   This option allows enabling or disabling the graphics to reduce kernel attack surface.
+  Requires `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_ to be part of the build.
   If your device does not have a graphic output, you should be able to leave this to default.
 
 * ``SULKA_ENABLE_MODULE_SIGNING`` (0)
@@ -223,6 +224,10 @@ This chapter covers the configuration items in Sulka. The default value for each
   * ``SULKA_EXPIRE_PASSWORDS``
 
   It is recommended to go through the options that are enabled by ``SULKA_EXTRA_COMPLIANCY``, and enable them manually if enabling the whole ``SULKA_EXTRA_COMPLIANCY`` feature is not possible.
+
+* ``SULKA_HARDEN_KERNEL`` (1)
+
+  Harden the kernel configuration. Requires `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_ to be part of the build.
 
 * ``SULKA_INSTALL_SSH_KEYS`` (0)
 

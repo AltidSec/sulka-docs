@@ -28,6 +28,11 @@ There are multiple repositories related to Sulka. Here you can find the listing 
   This repository is the distro part of the Sulka.
   It defines the packages that get installed into the user space, and the hardening configurations for the packages.
 
+* `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_
+
+  This repository is the kernel configuration part of the Sulka.
+  It contains kernel metadata for creating a hardened kernel.
+
 * `Sulka documentation <https://codeberg.org/AltidSec/sulka-docs>`_
 
   This is the documentation repository for Sulka.
