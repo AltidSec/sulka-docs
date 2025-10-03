@@ -190,6 +190,11 @@ Configuration Variables
 
 This chapter covers the configuration items in Sulka. The default value for each configuration is in the parentheses after the name
 
+* ``SULKA_DEVELOPMENT_MODE`` (0)
+
+  Enable a development mode where some security measures and configurations are lowered or disabled to make development and debugging work easier.
+  This option should not be enabled on production builds, and a warning will be printed if this option is enabled.
+
 * ``SULKA_DISABLE_GRAPHICS`` (1)
 
   This option allows enabling or disabling the graphics to reduce kernel attack surface.
