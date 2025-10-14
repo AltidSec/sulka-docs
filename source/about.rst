@@ -46,5 +46,4 @@ There are multiple repositories related to Sulka. Here you can find the listing 
 Supported Yocto Versions
 ************************
 
-Sulka is currently in its early stages, with release 0.0.1 currently in development.
-The goal is to support the latest long-term support release of Yocto (currently Scarthgap)
+The goal is to support the latest long-term support release of Yocto (currently Scarthgap).
