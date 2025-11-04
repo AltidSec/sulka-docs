@@ -185,6 +185,66 @@ Then, enable the key signing feature and add the location to the keys and certif
 Please note that this feature does not sign binary drivers that are not compiled during the build.
 It is possible to sign these kind of drivers, but at the moment it has to be done manually before building the firmware image.
 
+Bootloader (U-Boot)
+*******************
+
+Sulka contains hardening features for the bootloader.
+U-Boot is used as the reference bootloader as it is quite commonly used.
+
+Locking Command Line Interface
+==============================
+
+In Sulka, the command line interface of U-Boot is locked behind the "stop string" functionality by default.
+This "stop string" is a password in practice.
+The default value of the stop string is an empty string, meaning that the command line interface should effectively be locked by default.
+
+To set the password for the command line interface, use the ``SULKA_UBOOT_PASSWORD`` variable.
+The value should be an SHA-512 password hash. You can generate a suitable password with the following command:
+
+.. code-block::
+
+   mkpasswd -m sha-512 -R 10000 PASSWORD
+
+When setting the ``SULKA_UBOOT_PASSWORD`` variable, escape all dollar signs and slashes in the output with backslashes, for example:
+
+.. code-block::
+
+   # Do not use this password, it is just an example. Use the command above to generate a custom password
+   SULKA_UBOOT_PASSWORD = "\$6\$rounds=10000\$UAOalptsTK98MxhA\$OE8G1lKVxgLt49fumHZUjtjLIp65Fwk.fKiJ8L6Ig2seKiG2iks5gWF\/GfCr0gg2RZNvEivVJ87gC\/0GPiiv3."
+
+Commands
+========
+
+By default, U-Boot builds a lot of commands into its command line interface.
+However, some commands can pose security risks and it is best to minimize the amount of commands.
+Sulka disables some U-Boot commands to reduce attack surface.
+However, some of these disabled commands may be required for your boot flows.
+It is recommended to check the ``meta-sulka-bsp/recipes-bsp/u-boot/u-boot/sulka_harden_configuration.cfg`` configuration to see what commands are disabled.
+
+In addition, Sulka adds a command allowlisting feature.
+This feature allows defining the commands that are allowed to be executed during the autoboot process.
+It is difficult to disable all the unnecessary commands, and sometimes certain commands have to be left in the bootloader for maintenance purposes.
+The allowlisting feature allows executing all the commands if the CLI is opened, but prevents commands that are not in the allowlist during autoboot.
+
+Allowlisting is disabled by default, as it is impossible to have a sane default value that would fit all the devices and use cases.
+To enable the allowlist, add the following to your U-Boot configuration:
+
+.. code-block::
+
+   COMMAND_ALLOWLIST=y
+   COMMAND_ALLOWLIST_CMDS="space separated list of allowed commands"
+
+Environment
+===========
+
+U-Boot has an environment that can be used to control the boot.
+The environment can be built-in, and it can also be loaded externally.
+However, loading external environments can be a security risk as U-Boot does not verify its integrity.
+Sulka disables the external environments by default, but if you need a writable external environment, enable it in the U-Boot configuration.
+Check ``meta-sulka-bsp/recipes-bsp/u-boot/u-boot/sulka_harden_configuration.cfg`` for environment configurations.
+
+Note that the external environment **should not** contain critical boot information that may result in losing control of the boot flow.
+
 Configuration Variables
 ***********************
 
@@ -283,3 +343,8 @@ This chapter covers the configuration items in Sulka. The default value for each
   The password that the service user uses to log in.
   This is not set by default, and if you do not set a password, the service user will not be added.
   See the instructions in the :ref:`quick-start` for the password creation and setting.
+
+* ``SULKA_UBOOT_PASSWORD`` (no default value)
+
+  The password that can be used to log in to the u-boot command line interface.
+  By default, no password is set and the command line interface is inaccessible.
