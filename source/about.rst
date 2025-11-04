@@ -33,6 +33,11 @@ There are multiple repositories related to Sulka. Here you can find the listing 
   This repository is the kernel configuration part of the Sulka.
   It contains kernel metadata for creating a hardened kernel.
 
+* `meta-sulka-bsp <https://codeberg.org/AltidSec/meta-sulka-bsp>`_
+
+  This repository is the board support package part of the Sulka.
+  It contains metadata for hardened bootloader, which in the reference implementation is U-Boot.
+
 * `Sulka documentation <https://codeberg.org/AltidSec/sulka-docs>`_
 
   This is the documentation repository for Sulka.
