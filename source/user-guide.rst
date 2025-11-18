@@ -48,7 +48,7 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
   AIDE stands for Advanced Intrusion Detection Environment, and it is used as a file integrity monitor in Sulka. With periodic checks, AIDE can detect changes in files and report these.
 
-* ``audit`` (installed if monitoring is enabled)
+* ``audit`` (installed if monitoring or SELinux is enabled)
 
   audit is an auditing package that can be used to watch files and syscalls. These actions taken on these files or syscalls can then be logged into the auditing log, detecting undesired behavior.
 
