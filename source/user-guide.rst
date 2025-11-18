@@ -91,6 +91,17 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
   sysstat is used for periodically checking the system resource usage to detect anomalous activity in the system.
 
+Recommended Packages
+====================
+
+In addition to the previously listed packages, Sulka recommends the following packages that are installed by default:
+
+* ``bash``
+
+  Bash is used in the testing images, as it is a dependency for some tools.
+  Also, it fixes shell profile reading issue that occurs when Busybox shells are used with SELinux.
+  Therefore it is recommended to be used with Sulka.
+
 Firewall
 ********
 
