@@ -13,6 +13,8 @@ To start building your own system on top of Sulka, you will most likely want to 
 The easiest way to do this to fork `kas Sulka repository <https://codeberg.org/AltidSec/kas-sulka>`_, and add your own configuration files to the fork next to the Sulka configuration files.
 This approach allows you to easily work with the Sulka distro, configure it as required, and rebase your work on top of updates
 
+You can find an example of how Sulka has been ported to a Raspberry Pi from `the kas Raspberry Pi example repository <https://codeberg.org/AltidSec/kas-sulka-raspberrypi-example.git>`_.
+
 Supported Configurations
 ************************
 

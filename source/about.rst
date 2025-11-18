@@ -23,6 +23,11 @@ There are multiple repositories related to Sulka. Here you can find the listing 
   Kas is the build tool used to configure and build Sulka, and it is commonly used in Yocto projects.
   From this repository you can find the build configuration, and instructions on how to build the repository.
 
+* `kas Sulka Raspberry Pi example <https://codeberg.org/AltidSec/kas-sulka-raspberrypi-example.git>`_
+
+  Example repository of how the Sulka project can be ported on a custom hardware.
+  The example ports the Sulka distro to Raspberry Pi 4 64-bit, but the instructions in the repo can be applied to other hardware as well.
+
 * `meta-sulka-distro <https://codeberg.org/AltidSec/meta-sulka-distro>`_
 
   This repository is the distro part of the Sulka.
@@ -37,6 +42,11 @@ There are multiple repositories related to Sulka. Here you can find the listing 
 
   This repository is the board support package part of the Sulka.
   It contains metadata for hardened bootloader, which in the reference implementation is U-Boot.
+
+* `meta-sulka-raspberrypi <https://codeberg.org/AltidSec/meta-sulka-raspberrypi.git>`_
+
+  This is the integration layer that performs some modifications and additions to the Sulka that are required to port the distro to the Raspberry Pi.
+  These actions mostly consist of editing the bootloader and kernel metadata, as they are quite board specific.
 
 * `Sulka documentation <https://codeberg.org/AltidSec/sulka-docs>`_
 
