@@ -45,7 +45,7 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
   audit is an auditing package that can be used to watch files and syscalls. These actions taken on these files or syscalls can then be logged into the auditing log, detecting undesired behavior.
 
-* ``cronie``
+* ``cronie`` (installed if ``sysstat`` is installed)
 
   Cronie is a system utility that is used to run tasks periodically. This is useful for system monitoring, when activities are checked at specific times.
 
