@@ -41,15 +41,6 @@ Installed Packages
 
 Sulka installs packages as a part of the distro. You can find the packages listed here, along with the explanation of what they do and why they're installed.
 
-
-* ``acct`` (installed if monitoring is enabled)
-
-  acct is the GNU Accounting Utilities package that is used to perform process monitoring. This can be used to check what processes have been started in the system, and when the processes have been started.
-
-* ``aide`` (installed if monitoring is enabled)
-
-  AIDE stands for Advanced Intrusion Detection Environment, and it is used as a file integrity monitor in Sulka. With periodic checks, AIDE can detect changes in files and report these.
-
 * ``audit`` (installed if monitoring or SELinux is enabled)
 
   audit is an auditing package that can be used to watch files and syscalls. These actions taken on these files or syscalls can then be logged into the auditing log, detecting undesired behavior.
@@ -118,8 +109,7 @@ Monitoring
 **********
 
 Sulka can install multiple packages that are used to monitor the system and can be used to detect anomalies.
-However, these are not installed by default as they require configuration.
-These packages are ``acct``, ``aide``, ``auditd``, and ``sysstat``.
+However, these are not installed by default as they are not essential for the operation and to get the most use of them the user would have to set up a remote logging system.
 
 To enable monitoring, set the following flag in your build configuration
 
@@ -140,7 +130,7 @@ To get the most of these monitoring capabilities, your system should satisfy the
 The monitoring can be useful without fulfilling these requirements, but the usefulness may be limited as the logs may be lost before analysis or cannot be analyzed remotely/automatically.
 
 It is recommended that you run a long test with the system running the usual load to see how large the logs grow in your system and if the system properly rotates the logs.
-After that, you can either configure or disable some of the monitoring functionality as required.
+After that, you can either configure or disable the monitoring functionality as required.
 
 SELinux
 *******
