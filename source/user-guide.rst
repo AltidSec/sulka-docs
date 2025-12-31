@@ -23,9 +23,9 @@ Sulka aims to provide support for the common alternatives related to Linux syste
 Init Managers
 =============
 
-Currently, Sulka primarily supports sysvinit as the init manager.
-Using systemd as the init manager should be possible, and all the custom initialization scripts have their systemd service counterparts. However, systemd is not actively used and tested, so there may be some things missing.
-More complete systemd support is planned for the future. Please raise an issue in the ``meta-sulka-distro`` repository if getting this is urgent to you.
+Currently, Sulka primarily supports systemd as the init manager.
+Using sysvinit as the init manager should be possible, and all the custom services have their sysvinit counterparts.
+Basic testing is performed on both init managers, but the development is done mostly on systemd-based systems.
 
 Mandatory Access Control Modules
 ================================
