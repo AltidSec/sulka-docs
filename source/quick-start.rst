@@ -54,7 +54,7 @@ Quick Start
 
 #. (Optional) Edit the firewall template in ``meta-sulka-distro/recipes-filter/nftables-configuration/files/nftables-drop-everything.conf``, or select one of the other templates with ``SULKA_NFTABLES_CONF`` configuration variable.
 
-#. (Optional) Edit the sudo configuration for the service user in ``meta-sulka-distro/recipes-extended/sudo/files/serviceuser.conf`` to enable sudo.
+#. (Optional) Edit the sudo configuration for the service user in ``meta-sulka-distro/recipes-extended/sudo/files/serviceuser.conf`` to configure sudo, or set ``SULKA_SERVICEUSER_ENABLE_SUDO="1"`` in your build configuration.
 
 #. Build the image:
 

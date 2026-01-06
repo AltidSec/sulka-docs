@@ -325,6 +325,12 @@ This chapter covers the configuration items in Sulka. The default value for each
   Sulka installs an fstab file that contains some hardening options for the mounts.
   You can either override that file with your own, or append the required lines using this variable.
 
+* ``SULKA_SERVICEUSER_ENABLE_SUDO`` ("0")
+
+  Enable default sudo configuration for the service user by setting this to ``1``.
+  The default sudo configuration allows full root privileges for the service user when they use sudo, making them effectively a root user.
+  You may want to consider more granular sudo configuration with multiple users on production systems.
+
 * ``SULKA_SERVICEUSER_USERNAME`` ("serviceuser")
 
   The name of the service user that can be used to log in to the system.
