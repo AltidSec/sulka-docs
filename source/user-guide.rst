@@ -310,6 +310,11 @@ This chapter covers the configuration items in Sulka. The default value for each
   The firewall configuration template that gets installed to the system and is used as the default firewall configuration.
   See :ref:`Firewall` for more information.
 
+* ``SULKA_RUGIX_ROOT_CERT`` (no default value)
+
+  The path to the root certificate that is used to sign the update bundle signing certificate and that should be deployed to the firmware image.
+  See :ref:`firmware-update` for more information.
+
 * ``SULKA_SSH_KEYS_DIR`` ("${TOPDIR}/../auth-keys")
 
   The directory where the public SSH key will be looked from if ``SULKA_INSTALL_SSH_KEYS`` is set to ``1``.

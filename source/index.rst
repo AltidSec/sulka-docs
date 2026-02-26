@@ -15,3 +15,4 @@ Contents
    about
    quick-start
    user-guide
+   firmware-update
