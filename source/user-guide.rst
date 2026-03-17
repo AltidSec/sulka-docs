@@ -177,6 +177,29 @@ Then, enable the key signing feature and add the location to the keys and certif
 Please note that this feature does not sign binary drivers that are not compiled during the build.
 It is possible to sign these kind of drivers, but at the moment it has to be done manually before building the firmware image.
 
+Read-Only Root File System
+**************************
+
+Sulka supports read-only root file system, and it is enabled by default to prevent modifications to the contents of the root file system.
+Read-only root file system is controlled with ``SULKA_ENABLE_READ_ONLY_ROOTFS`` option.
+To disable read-only root file system, set the option to ``0``.
+
+This option adds ``erofs`` (enhanced read-only file system) to the ``IMAGE_FSTYPES``.
+``erofs`` is used by default with ``runqemu`` command, but you'll need to manually add this to your Wic-images (or whatever you are using to build your images).
+The option also adds ``read-only-rootfs`` to ``EXTRA_IMAGE_FEATURES``, in practice mounting the rootfs read-only, adding some read-only compatible configurations, and ensuring that there are no on-target post-installation tasks.
+Finally, the option attempts to add ``ro`` kernel command-line parameter with ``APPEND`` and ``CMDLINE`` variables, but you should ensure that it gets properly added on your system.
+
+You may want to add writable locations to your images. There are a few ways to achieve this:
+
+* Writable partitions. In practice, adding extra partitions that are read-write (and preferably ``noexec``)
+* Overlays. Adding a writable overlay with ``overlayfs`` to the root file system allows straightforward write support. Note that overlays do not work well with SELinux.
+* Temporary file systems. If you want to create a completely stateless image, using temporary file systems is a good idea as it ensures that none of the written information is stored.
+* Bind mounts. Bind mounts allow mounting individual directories as required. The mounted directory can be on an extra partition or ``tmpfs``, depending on whether you want to store the information.
+* Symlinks. Symlinks can be created in the root file system for files that are expected to be writable. These links can then point to writable partitions or ``tmpfs`` locations.
+
+Note that this feature does not prevent offline modifications to the file system.
+To add integrity checking to the root file system, look into dm-verity.
+
 Bootloader (U-Boot)
 *******************
 
@@ -264,6 +287,11 @@ This chapter covers the configuration items in Sulka. The default value for each
   Set this option to ``1`` to install ``packagegroup-sulka-monitoring``. This packagegroup contains utilities that can be used to monitor the system.
   See :ref:`Monitoring` for more information.
 
+* ``SULKA_ENABLE_READ_ONLY_ROOTFS`` (1)
+
+  Set this option to ``1`` to make the root file system read-only, or ``0`` to make it writable.
+  For ensuring the integrity of the root file system, it is recommended to keep this ``1``.
+  See :ref:`Read-Only Root File System` for more information.
 
 * ``SULKA_EXPIRE_PASSWORDS`` (0)
 
