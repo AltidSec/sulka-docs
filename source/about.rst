@@ -61,4 +61,4 @@ There are multiple repositories related to Sulka. Here you can find the listing 
 Supported Yocto Versions
 ************************
 
-The goal is to support the latest long-term support release of Yocto (currently Scarthgap).
+The primary goal is to support the latest long-term support release of Yocto (currently Wrynose).

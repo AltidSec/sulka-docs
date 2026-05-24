@@ -164,7 +164,7 @@ This helps preventing kernel-level attacks, like installing rootkits, keyloggers
 The feature is disabled by default, as it breaks the build if no keys are provided.
 However, it is **strongly** recommended that you enable module signing.
 
-To enable the feature, first generate the keys using the ``generate_ima_evm_modsign_keys.sh`` script in `kas-sulka <https://codeberg.org/AltidSec/kas-sulka/src/branch/scarthgap/scripts/generate_ima_evm_modsign_keys.sh>`_.
+To enable the feature, first generate the keys using the ``generate_ima_evm_modsign_keys.sh`` script in `kas-sulka <https://codeberg.org/AltidSec/kas-sulka/src/branch/wrynose/scripts/generate_ima_evm_modsign_keys.sh>`_.
 Then, enable the key signing feature and add the location to the keys and certificate authority in your build configuration:
 
 .. code-block::

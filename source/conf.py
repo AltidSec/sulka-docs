@@ -3,7 +3,7 @@
 # -- Project information
 
 project = 'Sulka Documentation'
-copyright = '2025, AltidSec'
+copyright = '2026, AltidSec'
 author = 'AltidSec'
 
 release = '0.5.1'
