@@ -310,6 +310,17 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   It is recommended to go through the options that are enabled by ``SULKA_EXTRA_COMPLIANCY``, and enable them manually if enabling the whole ``SULKA_EXTRA_COMPLIANCY`` feature is not possible.
 
+* ``SULKA_HARDEN_FSTAB`` (1)
+
+  This variable can be used to control whether the ``fstab`` is hardened or not.
+  Hardened ``fstab`` adds ``hidepid=2`` option to ``/proc`` mount, and ``nodev,nosuid,noexec`` options to ``/run`` and ``/var/volatile`` mounts.
+  These shoud apply cleanly to the stock ``fstab`` from ``base-files`` recipe, but if you override it and your ``fstab`` differs, the hardening may not necessarily apply cleanly.
+  In that situation, disable the hardening by setting this variable to ``0`` and ensure that your own ``fstab`` has secure options.
+
+  Note that ``noexec`` mount option may cause issues if you run scripts or programs in ``/run`` or ``/tmp``.
+  First, consider if it is possible to modify your system so that the scripts can be run elsewhere.
+  If not, you'll need to disable this feature and set the hardening flags yourself.
+
 * ``SULKA_HARDEN_KERNEL`` (1)
 
   Harden the kernel configuration. Requires `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_ to be part of the build.
@@ -351,12 +362,6 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   Allows configuring the SSH server to listen in a non-standard port.
   By default, the standard port is used.
-
-* ``SULKA_FSTAB_EXTRA_LINES`` ("")
-
-  This variable can be used to add extra lines into the fstab file.
-  Sulka installs an fstab file that contains some hardening options for the mounts.
-  You can either override that file with your own, or append the required lines using this variable.
 
 * ``SULKA_SERVICEUSER_ENABLE_SUDO`` ("0")
 
