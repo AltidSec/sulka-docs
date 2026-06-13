@@ -61,4 +61,36 @@ There are multiple repositories related to Sulka. Here you can find the listing 
 Supported Yocto Versions
 ************************
 
-The primary goal is to support the latest long-term support release of Yocto (currently Wrynose).
+The primary goal of Sulka is to support the latest long-term support release of Yocto (currently Wrynose).
+
+In addition, limited support is currently given to the previous LTS release, Scarthgap.
+The support is limited to the ``systemd`` init manager.
+The Raspberry Pi 4 hardware reference has worked in the past but is no longer supported: it may or may not work, and it is not actively tested.
+The same applies to ``sysvinit``.
+Note that this support may end after any release without warning, so it is recommended to update to Wrynose as soon as possible.
+
+Releases & Versioning
+*********************
+
+A new version of Sulka is released roughly every four months, towards the end of March, June, September and December.
+
+The versioning scheme goes roughly as follows:
+
+* Major version indicates the version of Yocto that Sulka is based on (0.n.n is for Scarthgap, 1.n.n for Wrynose).
+  Updating to a new major version will certainly require fixing things.
+
+* Minor version increases when there are significant configuration changes to Sulka, or other known breaking changes from Yocto.
+  Updating to this version will require your attention.
+  Reviewing your configuration and testing the functionality is required, but the release does not necessarily break things if the default settings work for you.
+
+* Patch version increases after every release if there are no changes that are considered major or minor.
+  Note that minor Yocto updates fall into this category. Updating the Yocto minor releases is usually straightforward, but may cause issues in some situations.
+  In general, updating to this version should be safe, but there may still be unexpected complications, so plan accordingly.
+
+Roadmap & Following Development
+*******************************
+
+You can find the planned features from `the Trello board of the project <https://trello.com/b/4hZ5xmkg/sulka>`_.
+Note that the planned content may be moved to a future or the next release if it cannot be completed in time for the release it was planned for.
+
+To stay up-to-date on Sulka development, you can follow `the main developer's Mastodon account <https://infosec.exchange/@ejaaskel>`_.
