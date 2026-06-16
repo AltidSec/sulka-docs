@@ -72,20 +72,20 @@ The actual steps to perform the update are as follows:
 
      kas build kas-sulka.yml:kas-sulka-raspberrypi.yml:extra_fragments/fw-update-rugix.yml
 
-#. Sign the resulting ``.rugixb`` update bundle with keys you generated before.
+#. Sign the resulting ``.rugixb`` image with keys you generated before.
    For this, you'll need ``rugix-bundler`` command. If you don't want to install it you can use the built binary as follows:
 
    .. code-block::
 
      <PATH_TO_TOPDIR>/tmp/sysroots-components/x86_64/rugix-bundler-native/usr/bin/rugix-bundler signatures sign \
-         <PATH_TO_IMAGES>/update-bundle-base-raspberrypi4-64.rugixb \
+         <PATH_TO_IMAGES>/core-image-base-raspberrypi4-64.rootfs.rugixb \
          <PATH_TO_KEYS>/signer.crt \
          <PATH_TO_KEYS>/signer.key \
-         update-bundle-base-raspberrypi4-64.signed.rugixb
+         core-image-base-raspberrypi4-64.rootfs.signed.rugixb
 
    For production setups, it is recommended to use PKCS#11 for signing. For further details, see `Rugix's documentation <https://rugix.org/docs/ctrl/signed-updates/>`_.
 
-#. Copy the signed update bundle ``update-bundle-base-raspberrypi4-64.signed.rugixb`` to an USB thumb drive.
+#. Copy the signed update bundle ``core-image-base-raspberrypi4-64.rootfs.signed.rugixb`` to an USB thumb drive.
    In this demo we'll use USB to transport the update bundle to the device, but network transportation methods are also possible.
    For example, Rugix supports streaming the update from an HTTP server directly to its destination while verifying individual blocks before writing them.
 
@@ -120,7 +120,7 @@ The actual steps to perform the update are as follows:
 
    .. code-block::
 
-     sudo rugix-ctrl update install /media/update-bundle-base-raspberrypi4-64.signed.rugixb
+     sudo rugix-ctrl update install /media/core-image-base-raspberrypi4-64.rootfs.signed.rugixb
 
 #. Wait for the device to reboot after the bundle is installed.
    After boot, check the system status with the following command, and commit if you are happy with the results of the update:
