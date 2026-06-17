@@ -87,6 +87,20 @@ The versioning scheme goes roughly as follows:
   Note that minor Yocto updates fall into this category. Updating the Yocto minor releases is usually straightforward, but may cause issues in some situations.
   In general, updating to this version should be safe, but there may still be unexpected complications, so plan accordingly.
 
+The following table shows the Sulka releases that are based on different versions of Yocto.
+The releases sharing the same row should be identical from the Sulka feature point of view, so for example documentation for the version 1.0.0 should apply to 0.6.0.
+
+=============== =================
+Wrynose (1.n.n) Scarthgap (0.n.n)
+=============== =================
+1.0.0           0.6.0
+\               0.5.1
+\               0.5.0
+\               0.4.0
+\               0.3.0
+\               0.2.0
+=============== =================
+
 Roadmap & Following Development
 *******************************
 
