@@ -61,6 +61,8 @@ Quick Start
    .. code-block::
 
      kas build kas-sulka.yml
+     # or use kas-container for containerised builds
+     kas-container build kas-sulka.yml
 
 #. Run the image, and login as the service user using the password defined earlier
 
