@@ -15,7 +15,8 @@ The distro hardening is achieved by performing the following tasks by default:
 Repositories
 ************
 
-There are multiple repositories related to Sulka. Here you can find the listing of them:
+There are multiple repositories related to the Sulka project. This section contains a list of them, with a link to each repository.
+In addition to the Codeberg repositories, you can find `GitHub mirrors of each repository here <https://github.com/AltidSec/>`_.
 
 * `kas Sulka <https://codeberg.org/AltidSec/kas-sulka>`_
 
