@@ -6,8 +6,8 @@ project = 'Sulka Documentation'
 copyright = '2026, AltidSec'
 author = 'AltidSec'
 
-release = '0.5.1'
-version = '0.5.1'
+release = '1.0.0'
+version = '1.0.0'
 
 # -- General configuration
 
