@@ -155,8 +155,39 @@ You may want to consider switching the policy to stricter ``standard`` for produ
 This provides enhanced security, but for example interactive login sessions are limited in functionality.
 Note that the Sulka specific patches apply only to the ``targeted`` refpolicy. If you change the refpolicy you need to edit the recipe files.
 
-Module Signing
+Kernel Modules
 **************
+
+Linux kernel modules provide a way to add code to highly-privileged kernel-space.
+This is commonly used, for example, for drivers.
+However, this also provides a dangerous attack surface, as adversaries can try to exploit this loading mechanism.
+
+For this purpose, you will want to control the modules that can be loaded into the kernel.
+Sulka provides two ways to control this: either by disabling the kernel modules completely, or by enforcing module signing.
+
+Disabling Kernel Modules
+========================
+
+When Linux kernel modules are disabled, the kernel is fully defined during the build, meaning that no code can be loaded during runtime.
+This is the most secure way to approach the module security issue.
+However, if you have for example hardware that has binary drivers that you cannot compile into the kernel, or you have to build some modules out-of-tree, this is not a suitable option.
+If that's the case, check the next section, :ref:`Module Signing`, for an alternative that could be more suitable.
+
+To disable kernel modules, you can set the following in your build configuration:
+
+.. code-block::
+
+   SULKA_DISABLE_KERNEL_MODULES = "1"
+
+Note that this feature will print out a lot of warnings during the build.
+This happens because Yocto checks that the wanted build configuration matches the actual build configuration.
+However, because the feature disables the modules, many ``m`` options get converted into ``y`` options, causing a mismatch between expectations and reality, which triggers the warnings.
+
+Because of the build warnings and incompatibility with some systems, the feature is disabled by default.
+Note that enabling ``SULKA_EXTRA_COMPLIANCY`` disables the kernel modules.
+
+Module Signing
+==============
 
 Module signing functionality allows signing kernel modules to prevent unauthorized code from being loaded into the kernel.
 This helps preventing kernel-level attacks, like installing rootkits, keyloggers, or malicious drivers.
@@ -276,6 +307,14 @@ This chapter covers the configuration items in Sulka. The default value for each
   Requires `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_ to be part of the build.
   If your device does not have a graphic output, you should be able to leave this to default.
 
+* ``SULKA_DISABLE_KERNEL_MODULES`` (0)
+
+  Set this option to ``1`` to disable loadable modules in the Linux kernel.
+  Linux kernel modules allow loading code to highly privileged kernel space, potentially allowing dangerous exploits.
+  Disabling kernel modules prevents this.
+  If you have binary drivers that you cannot compile yourself, or you build out-of-tree modules, this option is not suitable for you.
+  See :ref:`Disabling Kernel Modules` for more information.
+
 * ``SULKA_ENABLE_MODULE_SIGNING`` (0)
 
   Set this option to ``1`` to enable module signing.
@@ -305,6 +344,7 @@ This chapter covers the configuration items in Sulka. The default value for each
   These are options that may make more sense in workstation or server use, or that need some integration work, so they are disabled by default.
   This option enables the following options:
 
+  * ``SULKA_DISABLE_KERNEL_MODULES``
   * ``SULKA_ENABLE_MONITORING``
   * ``SULKA_EXPIRE_PASSWORDS``
 
