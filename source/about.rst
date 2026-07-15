@@ -11,6 +11,7 @@ The distro hardening is achieved by performing the following tasks by default:
 * Securing user logins with PAM
 * Hardening the application configurations, like OpenSSH
 * Minimizing the ``DISTRO_FEATURES`` of the image
+* Enforcing kernel module signing to prevent unsigned code from being loaded into the kernel
 
 Repositories
 ************

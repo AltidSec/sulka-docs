@@ -192,21 +192,65 @@ Module Signing
 Module signing functionality allows signing kernel modules to prevent unauthorized code from being loaded into the kernel.
 This helps preventing kernel-level attacks, like installing rootkits, keyloggers, or malicious drivers.
 
-The feature is disabled by default, as it breaks the build if no keys are provided.
-However, it is **strongly** recommended that you enable module signing.
+Module signing is enabled by default, as it is **strongly** recommended for securing the kernel.
+Because the feature requires signing keys, you must generate them and point the build to them, otherwise the build will fail.
 
-To enable the feature, first generate the keys using the ``generate_ima_evm_modsign_keys.sh`` script in `kas-sulka <https://codeberg.org/AltidSec/kas-sulka/src/branch/wrynose/scripts/generate_ima_evm_modsign_keys.sh>`_.
-Then, enable the key signing feature and add the location to the keys and certificate authority in your build configuration:
+To provide the keys, first generate them using the ``generate_ima_evm_modsign_keys.sh`` script in `kas-sulka <https://codeberg.org/AltidSec/kas-sulka/src/branch/wrynose/scripts/generate_ima_evm_modsign_keys.sh>`_.
+Then, add the location of the keys and the certificate authority to your build configuration:
 
 .. code-block::
 
-   SULKA_ENABLE_MODULE_SIGNING = "1"
    MODSIGN_KEY_DIR = "/path/to/generated/keys"
    IMA_EVM_ROOT_CA = "${MODSIGN_KEY_DIR}/ima-local-ca.pem"
+
+Module signing is controlled with the ``SULKA_ENABLE_MODULE_SIGNING`` option, which defaults to ``1``.
+If you cannot provide signing keys, you can disable the feature by setting ``SULKA_ENABLE_MODULE_SIGNING = "0"`` in your build configuration.
+This is **not** recommended, as it leaves the kernel able to load unsigned modules.
 
 
 Please note that this feature does not sign binary drivers that are not compiled during the build.
 It is possible to sign these kind of drivers, but at the moment it has to be done manually before building the firmware image.
+See :ref:`Signing External Modules` for instructions on how to do this.
+
+Signing External Modules
+------------------------
+
+When module signing is enforced, the kernel refuses to load any module whose signature it cannot verify against a trusted key.
+Modules that are compiled as part of the Yocto build are signed automatically.
+This includes out-of-tree modules that are built through their own Yocto recipes, as they are signed during the build just like the in-tree modules.
+
+The modules that are **not** signed for you are the ones that the Yocto build never builds itself.
+Typical examples are prebuilt binary drivers shipped as ready-made ``.ko`` files, and modules that you compile by hand outside of the Yocto build.
+These modules have to be signed manually with the same key that is built into the kernel keyring, otherwise the kernel will reject them at load time.
+
+External modules are signed using the ``sign-file`` script that ships with the kernel source.
+The script appends a signature to the ``.ko`` file using the module signing private key and certificate.
+These are the same keys that you generated with the ``generate_ima_evm_modsign_keys.sh`` script and pointed to with ``MODSIGN_KEY_DIR``, so make sure you use the exact key pair that was used for the build.
+If you sign a module with a different key, the kernel will not trust it.
+
+To sign an external module, run the ``sign-file`` script with the hash algorithm, the private key, the certificate, and the module to sign:
+
+.. code-block::
+
+   scripts/sign-file sha512 "${MODSIGN_KEY_DIR}/privkey_modsign.pem" "${MODSIGN_KEY_DIR}/x509_modsign.crt" my-external-module.ko my-external-module-signed.ko
+
+A few notes about the command:
+
+* The hash algorithm (``sha512`` above) must match the one configured for module signing in the kernel. Check your kernel configuration if you are unsure. ``sha512`` is the default in Sulka.
+* The ``sign-file`` script can be found under ``scripts/`` in the kernel source tree. In a Yocto build, you can locate it under the kernel recipe's build directory.
+
+After signing, package the signed module into your firmware image as you normally would, for example through your own meta-layer recipe.
+Because the signing has to happen before the image is assembled, it must be done before building the firmware image.
+
+You can confirm that a module carries a signature by checking for the signature marker at the end of the file:
+
+.. code-block::
+
+   modinfo my-external-module-signed.ko | grep -E "^sig"
+
+On the target, the kernel logs a message if it rejects an unsigned or incorrectly signed module.
+If a module fails to load with module signing enabled, verify that it was signed with the correct key pair and that the same key is trusted by the running kernel.
+You may also need to disable ``CONFIG_RANDSTRUCT_FULL`` enabled by Sulka configuration, as that may cause problems when loading external modules.
 
 Read-Only Root File System
 **************************
@@ -315,11 +359,11 @@ This chapter covers the configuration items in Sulka. The default value for each
   If you have binary drivers that you cannot compile yourself, or you build out-of-tree modules, this option is not suitable for you.
   See :ref:`Disabling Kernel Modules` for more information.
 
-* ``SULKA_ENABLE_MODULE_SIGNING`` (0)
+* ``SULKA_ENABLE_MODULE_SIGNING`` (1)
 
-  Set this option to ``1`` to enable module signing.
-  It is strongly recommended to enable this feature, but it is disabled by default as it breaks the build if the signing keys are not provided.
-  See :ref:`Module Signing` for more information on enabling this feature.
+  Set this option to ``0`` to disable module signing.
+  Module signing is enabled by default and it is strongly recommended to keep it enabled, but it requires signing keys to be provided or the build will fail.
+  See :ref:`Module Signing` for more information on providing the keys or disabling the feature.
 
 * ``SULKA_ENABLE_MONITORING`` (0)
 

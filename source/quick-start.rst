@@ -34,6 +34,27 @@ Quick Start
 
      SULKA_SERVICEUSER_PASSWORD = "<HASH_FROM_PREVIOUS COMMAND>"
 
+#. Checkout the meta-layers as module signing key generation script depends on meta-security:
+
+   .. code-block::
+
+     kas checkout kas-sulka.yml
+
+#. Generate the module signing keys. Module signing is required by default, so the build will fail if you do not provide the keys.
+
+   .. code-block::
+
+     ./scripts/generate_ima_evm_modsign_keys.sh
+
+   Then point the build to the generated keys by adding the following to ``kas-sulka-configuration.yml``, replacing the path with the directory where the keys were generated:
+
+   .. code-block::
+
+     MODSIGN_KEY_DIR = "/path/to/generated/keys"
+     IMA_EVM_ROOT_CA = "${MODSIGN_KEY_DIR}/ima-local-ca.pem"
+
+   If you cannot use module signing, you can disable it instead by setting ``SULKA_ENABLE_MODULE_SIGNING = "0"`` in the configuration. However, this is not recommended. See :ref:`Module Signing` for more details.
+
 #. (Optional) Change the default service user username ``serviceuser`` to something else by adding it to ``kas-sulka-configuration.yml``:
 
    .. code-block::
@@ -45,12 +66,6 @@ Quick Start
    .. code-block::
 
      SULKA_DISABLE_GRAPHICS = "0"
-
-#. (Optional) If editing the files in ``meta-sulka-distro``, checkout the meta-layers first:
-   
-   .. code-block::
-
-     kas checkout kas-sulka.yml
 
 #. (Optional) Edit the firewall template in ``meta-sulka-distro/recipes-filter/nftables-configuration/files/nftables-drop-everything.conf``, or select one of the other templates with ``SULKA_NFTABLES_CONF`` configuration variable.
 
