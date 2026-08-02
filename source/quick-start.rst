@@ -3,7 +3,24 @@
 Quick Start
 ###########
 
-#. Follow instructions in `the kas-sulka repository <https://codeberg.org/AltidSec/kas-sulka/>`_ to install and activate `kas <https://github.com/siemens/kas>`_.
+This page walks you through building Sulka for the ``qemux86-64`` reference machine and booting the result under QEMU.
+
+Sulka requires some setup before the first build. Module signing keys have to be generated or the build fails, and a service user password has to be set or the resulting image has nothing that can log in.
+Both of those are deliberate, and both are covered below.
+
+Before You Start
+****************
+
+You will need a Linux host set up for Yocto builds. See the `Yocto system requirements <https://docs.yoctoproject.org/ref-manual/system-requirements.html>`_ for the supported distributions and the host packages to install.
+
+You will also need ``mkpasswd`` for generating the password hash, which on Debian-based hosts is in the ``whois`` package.
+
+Be aware that this is a full Yocto build. Expect it to need tens of gigabytes of disk space, and expect the first build to take hours, as nothing is cached yet.
+
+Building Sulka
+**************
+
+#. Install `kas <https://github.com/siemens/kas>`_ by following the instructions in `the kas documentation <https://kas.readthedocs.io/en/latest/userguide/getting-started.html>`_.
 
 #. Clone the ``kas-sulka`` repository to build Sulka with kas:
 
@@ -12,29 +29,24 @@ Quick Start
      git clone https://codeberg.org/AltidSec/kas-sulka.git
      cd kas-sulka
 
-#. Generate a password for the service user that can be used to log in.
+#. Generate a password hash for the service user.
+   Dollar signs have to be escaped with ``\`` before the hash can be assigned to a variable in a Yocto-style build, so generate the hash and escape it in one go:
 
    .. code-block::
 
-     mkpasswd -m yescrypt -s -R 8 <SECRET_PASSWORD>
+     mkpasswd -m yescrypt -s -R 8 <SECRET_PASSWORD> | sed 's/\$/\\$/g'
 
-   When you update your password, the system requires that it be at least 14 characters long and include at least one character from at least three of the following four character classes: lowercase letters, uppercase letters, digits, and special characters. It is recommended that your initial password meets these requirements.
+   When you later change the password on the running system, it is required to be at least 14 characters long and to include at least one character from at least three of the following four character classes: lowercase letters, uppercase letters, digits, and special characters.
+   It is recommended that your initial password meets these requirements as well.
 
-   For assigning the resulting encrypted password to a variable in a Yocto-style build, dollar signs have to be escaped with ``\``. This can be combined with the password creation process:
-
-   .. code-block::
-
-     mkpasswd -m yescrypt -s -R 8 test | sed 's/\$/\\$/g'
-
-   This hashes the password "test" and prepares the resulting hash for pasting into a Yocto configuration file.
-
-#. Add the password to ``kas-sulka-configuration.yml``. Escape the four dollar signs in hash with ``\`` if not done already:
+#. Add the resulting hash to ``kas-sulka-configuration.yml``:
 
    .. code-block::
 
-     SULKA_SERVICEUSER_PASSWORD = "<HASH_FROM_PREVIOUS COMMAND>"
+     SULKA_SERVICEUSER_PASSWORD = "<HASH_FROM_PREVIOUS_COMMAND>"
 
-#. Checkout the meta-layers as module signing key generation script depends on meta-security:
+#. Check out the meta-layers, as the module signing key generation script depends on ``meta-security``.
+   Note that checking out the meta-layers may sometimes take a long while (up to a few minutes):
 
    .. code-block::
 
@@ -79,5 +91,28 @@ Quick Start
      # or use kas-container for containerised builds
      kas-container build kas-sulka.yml
 
-#. Run the image, and login as the service user using the password defined earlier
+Running the Image
+*****************
 
+Boot the built image under QEMU with ``runqemu``, from inside the kas build environment:
+
+.. code-block::
+
+  kas shell kas-sulka.yml -c 'runqemu nographic slirp'
+
+``nographic`` gives you a serial console, which is what you want because Sulka disables graphics by default.
+``slirp`` enables user-mode networking.
+
+Log in at the console prompt as ``serviceuser``, using the password you generated earlier.
+
+The serial console is the only way in to a default image.
+Sulka does not install an SSH server, and the firewall drops all traffic in every direction, so there is nothing listening and nothing that could reach it.
+:ref:`The Development Configuration Fragment` covers getting network access while developing.
+
+Next Steps
+**********
+
+* :ref:`Configuration Variables` lists everything that can be turned on and off in Sulka.
+* :ref:`Firewall` covers configuring the firewall for your own use.
+* :ref:`Building With Sulka` describes how to set up your own project on top of Sulka.
+* :ref:`Firmware Update Example` demonstrates A/B firmware updates on the Raspberry Pi reference.

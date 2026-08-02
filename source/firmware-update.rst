@@ -8,9 +8,12 @@ This page contains information about the firmware update references provided by 
 Motivation
 **********
 
-While it is impossible to provide a generic, fully hardened one-size-fits-all solution for the firmware upgrades, Sulka provides example firmware upgrades mechanisms for the reference boards.
-The purpose of these is to demonstrate firmware upgrades, and demonstrate how to achieve firmware upgrades on the hardened Sulka system.
-To adapt these into your needs, you should carefully consider the security features required from your firmware update flow.
+While it is impossible to provide a generic, fully hardened one-size-fits-all solution for the firmware upgrades, Sulka provides an example firmware update mechanism for the reference hardware.
+The purpose of it is to demonstrate firmware upgrades, and to demonstrate how to achieve them on the hardened Sulka system.
+To adapt this into your needs, you should carefully consider the security features required from your firmware update flow.
+
+The example is a demonstration rather than a production update system.
+In particular, it signs bundles with a key on your build machine and transports them on a USB drive, both of which you would most likely do differently on a real product.
 
 Rugix
 *****
@@ -33,7 +36,7 @@ To follow along you are going to need the following:
 
 The actual steps to perform the update are as follows:
 
-#. Clone ``kas-sulka-example-raspberrypi`` repository:
+#. Clone the ``kas-sulka-raspberrypi-example`` repository:
 
    .. code-block::
 
@@ -58,13 +61,19 @@ The actual steps to perform the update are as follows:
          -extfile <(printf "basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always")
 
 #. Follow instructions from the :ref:`quick-start` to configure the build.
-   At least the set the login password with ``SULKA_SERVICEUSER_PASSWORD``, and enable sudo with ``SULKA_SERVICEUSER_ENABLE_SUDO``.
+   You need to generate the module signing keys, as the build fails without them, and to set the login password with ``SULKA_SERVICEUSER_PASSWORD``.
+   The update commands below are run through ``sudo``, so enable it with ``SULKA_SERVICEUSER_ENABLE_SUDO``.
+
+   Note that these signing keys are for the kernel modules, and are unrelated to the update bundle signing keys generated in the previous step.
 
 #. Configure the path to the root certificate that will be deployed to the image. Add the following for example to ``kas-sulka-configuration.yml``:
 
    .. code-block::
 
      SULKA_RUGIX_ROOT_CERT = "<PATH_TO_KEYS>/root.crt"
+
+   This installs the root certificate to ``/etc/rugix/root.crt`` on the device, and Rugix is configured to trust that certificate.
+   An update bundle is only accepted if its signature chains up to it, which is what stops the device from installing a bundle you did not sign.
 
 #. Build the image:
 
@@ -85,7 +94,7 @@ The actual steps to perform the update are as follows:
 
    For production setups, it is recommended to use PKCS#11 for signing. For further details, see `Rugix's documentation <https://rugix.org/docs/ctrl/signed-updates/>`_.
 
-#. Copy the signed update bundle ``core-image-base-raspberrypi4-64.rootfs.signed.rugixb`` to an USB thumb drive.
+#. Copy the signed update bundle ``core-image-base-raspberrypi4-64.rootfs.signed.rugixb`` to a USB thumb drive.
    In this demo we'll use USB to transport the update bundle to the device, but network transportation methods are also possible.
    For example, Rugix supports streaming the update from an HTTP server directly to its destination while verifying individual blocks before writing them.
 
@@ -96,7 +105,7 @@ The actual steps to perform the update are as follows:
      sudo bmaptool copy core-image-base-raspberrypi4-64.rootfs.wic.bz2 /dev/<SD_CARD_DEVICE>
 
 #. Connect to the Raspberry Pi using UART.
-   `This post <https://www.jeffgeerling.com/blog/2021/attaching-raspberry-pis-serial-console-uart-debugging/>`_ contains instructions how to connect the cable to a Raspberry Pi. 
+   `This post <https://www.jeffgeerling.com/blog/2021/attaching-raspberry-pis-serial-console-uart-debugging/>`_ contains instructions how to connect the cable to a Raspberry Pi.
    Note that you do not have to modify the image contents to enable UART.
 
 #. Insert SD card to Raspberry Pi and turn it on.
@@ -133,6 +142,10 @@ The actual steps to perform the update are as follows:
      # Commit the active group as default
      sudo rugix-ctrl system commit
 
+   The commit step is what makes the update permanent.
+   Until you commit, the newly booted group is active but the other one is still the default, so a reboot returns the device to the previous firmware.
+   This is the safety net that A/B updates exist to provide: an update that boots into a broken system is recovered by a power cycle rather than by a visit to the device.
+
 Limitations / Modifications to Sulka
 ====================================
 
@@ -148,7 +161,7 @@ There are a few modifications related to using Rugix:
 * ``/run`` is not mounted through ``/etc/fstab`` anymore
 
   As Rugix's state management feature is used, Rugix will run early during the boot process, before the init manager.
-  As a part of it's initialization process, Rugix will take care of mounting ``/run``.
+  As a part of its initialization process, Rugix will take care of mounting ``/run``.
   To avoid re-mounting the tmpfs during the boot, ``/run`` is removed from ``fstab``.
 
 * State management overlay of Rugix is disabled

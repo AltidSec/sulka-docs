@@ -3,29 +3,18 @@ User Guide
 
 This page provides more in-depth information about Sulka for the developers that are interested in using the distro.
 
-Using Sulka For Your Project
-****************************
-
-If you are interested in using Sulka in your project, the usage is quite similar to the official reference distribution Poky.
-In practice, this means building your solution on top of the Sulka meta-layers, and adding your own meta-layers alongside them.
-
-To start building your own system on top of Sulka, you will most likely want to create a kas configuration repository.
-The easiest way to do this to fork `kas Sulka repository <https://codeberg.org/AltidSec/kas-sulka>`_, and add your own configuration files to the fork next to the Sulka configuration files.
-This approach allows you to easily work with the Sulka distro, configure it as required, and rebase your work on top of updates
-
-You can find an example of how Sulka has been ported to a Raspberry Pi from `the kas Raspberry Pi example repository <https://codeberg.org/AltidSec/kas-sulka-raspberrypi-example.git>`_.
-
 Supported Configurations
 ************************
 
-Sulka aims to provide support for the common alternatives related to Linux systems.
+Sulka aims to provide support for some common alternatives related to Linux systems.
+However, for time being the amount of supported options is limited to keep the development pace quick.
 
 Init Managers
 =============
 
-Currently, Sulka primarily supports systemd as the init manager.
-Using sysvinit as the init manager should be possible, and all the custom services have their sysvinit counterparts.
-Basic testing is performed on both init managers, but the development is done mostly on systemd-based systems.
+Currently, Sulka primarily supports ``systemd`` as the init manager.
+Using ``sysvinit`` as the init manager should be possible, and all the custom services have their ``sysvinit`` counterparts.
+Basic testing is performed on both init managers, but ``systemd`` is prioritized in the development.
 
 Mandatory Access Control Modules
 ================================
@@ -41,7 +30,7 @@ Installed Packages
 
 Sulka installs packages as a part of the distro. You can find the packages listed here, along with the explanation of what they do and why they're installed.
 
-* ``audit`` (installed if monitoring or SELinux is enabled)
+* ``audit``
 
   audit is an auditing package that can be used to watch files and syscalls. These actions taken on these files or syscalls can then be logged into the auditing log, detecting undesired behavior.
 
@@ -51,7 +40,7 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
 * ``dpkg-start-stop``
 
-  This is a dependency for the ``audit`` init script, as the init script relies on options that are not available on Busybox's `start-stop-daemon`.
+  This is a dependency for the ``audit`` init script, as the init script relies on options that are not available on Busybox's ``start-stop-daemon``.
 
 * ``nftables``
 
@@ -67,9 +56,23 @@ Sulka installs packages as a part of the distro. You can find the packages liste
 
   This is the core packagegroup from Yocto project that includes the essentials for the system.
 
+* ``packagegroup-selinux-minimal`` (installed if SELinux is enabled)
+
+  The minimal set of SELinux userspace tooling and the reference policy itself.
+  Sulka drops a few packages from this packagegroup, as they depend on components that Sulka avoids for licensing reasons.
+
+* ``packagegroup-sulka-netfilter-modules`` (installed unless kernel modules are disabled)
+
+  The kernel modules that the firewall rules need for connection tracking, rate limiting and logging.
+  These are not installed when kernel modules are disabled, in which case the corresponding functionality has to be built into the kernel.
+
 * ``passwdqc``
 
   passwdqc is a package that provides password quality enforcement. This should prevent users from using insecure passwords.
+
+* ``restorecon-post-mount`` (installed if SELinux is enabled on a ``sysvinit`` system)
+
+  Restores the SELinux file contexts after the file systems have been mounted, which ``systemd`` systems handle on their own.
 
 * ``sudo``
 
@@ -105,11 +108,39 @@ You can either use your own configuration file and add it to the build by append
 
   Allow all outgoing and incoming established traffic (e.g., responses to outgoing traffic), ICMP (e.g., ping), SSH, and loopback traffic. Additionally, log dropped incoming traffic.
 
+SSH
+***
+
+Sulka does not install an SSH server by default, as not every device needs remote access.
+One is installed by the development configuration fragment, and you can of course add one to your own build.
+Whenever it is present, Sulka hardens its configuration. Most of these values originate from ``meta-security/meta-hardening``.
+This applies to OpenSSH only.
+
+The most consequential change is that the server accepts key-based authentication only.
+Password authentication is disabled and root login is refused, so the service user password works on the serial console but not over the network.
+An image that has an SSH server but no authorized key installed cannot be reached over SSH at all.
+See :ref:`Installing SSH Keys` for installing a key at build time.
+
+The remaining hardening is applied to both ``sshd_config`` and ``sshd_config_readonly``:
+
+* ``MaxAuthTries 3`` limits the authentication attempts allowed per connection.
+* ``MaxSessions 2`` limits the concurrent sessions per connection, down from the default of 10.
+* ``AllowTcpForwarding no`` and ``AllowAgentForwarding no`` prevent the connection from being used to tunnel other traffic or to reach the client's authentication agent.
+* ``LogLevel VERBOSE`` records the fingerprint of the key used for each login, which is what makes an SSH login traceable to a specific key afterwards.
+* ``TCPKeepAlive no`` with ``ClientAliveCountMax 2`` drops unresponsive connections after two missed probes at the upstream fifteen second interval, relying on the authenticated keepalive rather than the plain TCP one.
+* ``Banner /etc/issue.net`` presents the restricted system warning before login.
+
+In addition, the ``sshd`` service user is given ``/sbin/nologin`` as its shell, and both configuration files are installed readable only by root.
+
+The listening port can be moved off the default with ``SULKA_SSH_PORT``.
+Note that this is obscurity rather than security, and the firewall still has to permit whichever port you choose. See :ref:`Firewall`.
+
 Monitoring
 **********
 
-Sulka can install multiple packages that are used to monitor the system and can be used to detect anomalies.
+Sulka can install monitoring packages that are used to monitor the system and can be used to detect anomalies.
 However, these are not installed by default as they are not essential for the operation and to get the most use of them the user would have to set up a remote logging system.
+Currently, the monitoring packagegroup contains only ``sysstat`` package.
 
 To enable monitoring, set the following flag in your build configuration
 
@@ -144,11 +175,12 @@ To disable SELinux, add the following to your build configuration (for example, 
 
    SULKA_MANDATORY_ACCESS_CONTROL_MODULE = "none"
 
-The default reference policy of the SELinux is set to ``targeted``. 
+The default reference policy of the SELinux is set to ``targeted``.
 This setting aims to protect core services while minimizing disruption to normal system operation.
 
 A few patches have been applied to this reference policy to address certain denial issues.
-These patches can be found from ``recipes-security/refpolicy/refpolicy-targeted``.
+These patches can be found from ``meta-sulka-distro/dynamic-layers/selinux/recipes-security/refpolicy/refpolicy-targeted``.
+Note that several of them are applied conditionally, depending on the init manager, whether an SSH server is installed, and whether the read-only root file system and monitoring are enabled.
 You should review these patches to ensure their changes align with your use case.
 
 You may want to consider switching the policy to stricter ``standard`` for production systems.
@@ -184,7 +216,7 @@ This happens because Yocto checks that the wanted build configuration matches th
 However, because the feature disables the modules, many ``m`` options get converted into ``y`` options, causing a mismatch between expectations and reality, which triggers the warnings.
 
 Because of the build warnings and incompatibility with some systems, the feature is disabled by default.
-Note that enabling ``SULKA_EXTRA_COMPLIANCY`` disables the kernel modules.
+Note that enabling ``SULKA_EXTRA_COMPLIANCY`` disables the kernel modules automatically.
 
 Module Signing
 ==============
@@ -202,6 +234,10 @@ Then, add the location of the keys and the certificate authority to your build c
 
    MODSIGN_KEY_DIR = "/path/to/generated/keys"
    IMA_EVM_ROOT_CA = "${MODSIGN_KEY_DIR}/ima-local-ca.pem"
+
+The script generates a certificate authority and signs both a module signing certificate and an IMA and EVM certificate with it, which is why the variable names mention IMA and EVM.
+This is the shared signing key infrastructure only.
+IMA and EVM themselves are not enabled in Sulka, as they conflict with SELinux, so the keys they would use are generated but not put to work.
 
 Module signing is controlled with the ``SULKA_ENABLE_MODULE_SIGNING`` option, which defaults to ``1``.
 If you cannot provide signing keys, you can disable the feature by setting ``SULKA_ENABLE_MODULE_SIGNING = "0"`` in your build configuration.
@@ -267,7 +303,10 @@ Finally, the option attempts to add ``ro`` kernel command-line parameter with ``
 You may want to add writable locations to your images. There are a few ways to achieve this:
 
 * Writable partitions. In practice, adding extra partitions that are read-write (and preferably ``noexec``)
-* Overlays. Adding a writable overlay with ``overlayfs`` to the root file system allows straightforward write support. Note that overlays do not work well with SELinux.
+* Overlays. Adding a writable overlay with ``overlayfs`` to the root file system allows straightforward write support.
+  Be aware that ``overlayfs`` does not work well with SELinux, which Sulka enables by default, because the overlay interferes with the file labelling.
+  In practice this option is only open to you if you disable the mandatory access control, so treat it as a trade between write support and mandatory access control rather than as a drop-in choice.
+  The Rugix firmware update reference makes that trade in the other direction: it disables its own overlay so that SELinux can stay enabled. See :ref:`Firmware Update Example`.
 * Temporary file systems. If you want to create a completely stateless image, using temporary file systems is a good idea as it ensures that none of the written information is stored.
 * Bind mounts. Bind mounts allow mounting individual directories as required. The mounted directory can be on an extra partition or ``tmpfs``, depending on whether you want to store the information.
 * Symlinks. Symlinks can be created in the root file system for files that are expected to be writable. These links can then point to writable partitions or ``tmpfs`` locations.
@@ -312,7 +351,7 @@ However, some of these disabled commands may be required for your boot flows.
 It is recommended to check the ``meta-sulka-bsp/recipes-bsp/u-boot/u-boot/sulka_harden_configuration.cfg`` configuration to see what commands are disabled.
 
 In addition, Sulka adds a command allowlisting feature.
-This feature allows defining the commands that are allowed to be executed during the autoboot process.
+This feature allows defining the exact commands that are allowed to be executed during the autoboot process.
 It is difficult to disable all the unnecessary commands, and sometimes certain commands have to be left in the bootloader for maintenance purposes.
 The allowlisting feature allows executing all the commands if the CLI is opened, but prevents commands that are not in the allowlist during autoboot.
 
@@ -321,8 +360,11 @@ To enable the allowlist, add the following to your U-Boot configuration:
 
 .. code-block::
 
-   COMMAND_ALLOWLIST=y
-   COMMAND_ALLOWLIST_CMDS="space separated list of allowed commands"
+   CONFIG_COMMAND_ALLOWLIST=y
+   CONFIG_COMMAND_ALLOWLIST_CMDS="space separated list of allowed commands"
+
+For a real example of an allowlist, see the Raspberry Pi reference, which enables the feature and lists the commands its boot flow needs in
+``meta-sulka-raspberrypi/recipes-bsp/u-boot/files/sulka_raspberrypi.cfg``.
 
 Environment
 ===========
@@ -367,7 +409,9 @@ This chapter covers the configuration items in Sulka. The default value for each
 
 * ``SULKA_ENABLE_MONITORING`` (0)
 
-  Set this option to ``1`` to install ``packagegroup-sulka-monitoring``. This packagegroup contains utilities that can be used to monitor the system.
+  Set this option to ``1`` to install ``packagegroup-sulka-monitoring``.
+  This packagegroup contains utilities that can be used to monitor the system.
+  Currently, this installs only ``sysstat``.
   See :ref:`Monitoring` for more information.
 
 * ``SULKA_ENABLE_READ_ONLY_ROOTFS`` (1)
@@ -380,7 +424,7 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   Set the passwords to expire in the system.
   This is disabled by default, as this requirement does not usually translate well into embedded systems.
-  However, if you perform user management on the Linux user level, it is recommended to enable this.
+  However, if you perform user management on the Linux user-space level, it is recommended to enable this.
 
 * ``SULKA_EXTRA_COMPLIANCY`` (0)
 
@@ -402,6 +446,7 @@ This chapter covers the configuration items in Sulka. The default value for each
   In that situation, disable the hardening by setting this variable to ``0`` and ensure that your own ``fstab`` has secure options.
 
   Note that ``noexec`` mount option may cause issues if you run scripts or programs in ``/run`` or ``/tmp``.
+  The same applies to ``/var/lib`` and ``/var/cache``, which is easy to miss: with the read-only root file system those are bind mounted from ``/var/volatile``, and they inherit the mount options, so ``noexec`` reaches them too.
   First, consider if it is possible to modify your system so that the scripts can be run elsewhere.
   If not, you'll need to disable this feature and set the hardening flags yourself.
 
@@ -430,13 +475,30 @@ This chapter covers the configuration items in Sulka. The default value for each
 
 * ``SULKA_NFTABLES_CONF`` ("nftables-drop-everything.conf")
 
-  The firewall configuration template that gets installed to the system and is used as the default firewall configuration.
+  The firewall configuration that gets installed to the system and is used as the default firewall configuration.
   See :ref:`Firewall` for more information.
 
 * ``SULKA_RUGIX_ROOT_CERT`` (no default value)
 
   The path to the root certificate that is used to sign the update bundle signing certificate and that should be deployed to the firmware image.
   See :ref:`firmware-update` for more information.
+
+* ``SULKA_SERVICEUSER_ENABLE_SUDO`` ("0")
+
+  Enable default sudo configuration for the service user by setting this to ``1``.
+  The default sudo configuration allows full root privileges for the service user when they use sudo, making them effectively a root user.
+  You may want to consider more granular sudo configuration with multiple users on production systems.
+
+* ``SULKA_SERVICEUSER_PASSWORD`` (no default value)
+
+  The password that the service user uses to log in.
+  This is not set by default, and if you do not set a password, the service user will not be added.
+  See the instructions in the :ref:`quick-start` for the password creation and setting.
+
+* ``SULKA_SERVICEUSER_USERNAME`` ("serviceuser")
+
+  The name of the service user that can be used to log in to the system.
+  It is recommended to change this into something else.
 
 * ``SULKA_SSH_KEYS_DIR`` ("${TOPDIR}/../auth-keys")
 
@@ -445,26 +507,9 @@ This chapter covers the configuration items in Sulka. The default value for each
 * ``SULKA_SSH_PORT`` (22)
 
   Allows configuring the SSH server to listen in a non-standard port.
-  By default, the standard port is used.
-
-* ``SULKA_SERVICEUSER_ENABLE_SUDO`` ("0")
-
-  Enable default sudo configuration for the service user by setting this to ``1``.
-  The default sudo configuration allows full root privileges for the service user when they use sudo, making them effectively a root user.
-  You may want to consider more granular sudo configuration with multiple users on production systems.
-
-* ``SULKA_SERVICEUSER_USERNAME`` ("serviceuser")
-
-  The name of the service user that can be used to log in to the system.
-  It is recommended to change this into something else.
-
-* ``SULKA_SERVICEUSER_PASSWORD`` (no default value)
-
-  The password that the service user uses to log in.
-  This is not set by default, and if you do not set a password, the service user will not be added.
-  See the instructions in the :ref:`quick-start` for the password creation and setting.
+  By default, the standard port 22 is used.
 
 * ``SULKA_UBOOT_PASSWORD`` (no default value)
 
-  The password that can be used to log in to the u-boot command line interface.
+  The password that can be used to log in to the U-boot command line interface.
   By default, no password is set and the command line interface is inaccessible.
