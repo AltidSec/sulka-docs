@@ -121,7 +121,7 @@ Password authentication is disabled and root login is refused, so the service us
 An image that has an SSH server but no authorized key installed cannot be reached over SSH at all.
 See :ref:`Installing SSH Keys` for installing a key at build time.
 
-The remaining hardening is applied to both ``sshd_config`` and ``sshd_config_readonly``:
+In addition, the following hardening is applied to ``sshd`` configuration:
 
 * ``MaxAuthTries 3`` limits the authentication attempts allowed per connection.
 * ``MaxSessions 2`` limits the concurrent sessions per connection, down from the default of 10.

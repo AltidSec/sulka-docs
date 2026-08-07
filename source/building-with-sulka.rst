@@ -105,7 +105,7 @@ Staying Up To Date
 Because your project is a fork, updating means merging the upstream kas Sulka repository into yours.
 The Raspberry Pi example is maintained this way, and its history contains the merge commits from each upstream release.
 
-A new Sulka release comes out roughly every four months.
+A new Sulka release comes out roughly every three months.
 Pin your build to a release tag rather than following a branch, so that updates happen when you choose.
 Review the changes before merging, as version increases signal configuration changes that need your attention.
 

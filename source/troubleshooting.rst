@@ -118,7 +118,7 @@ Sulka mounts the volatile file systems with ``noexec``, along with ``nodev`` and
 With the read-only root file system they are bind mounted from ``/var/volatile``, and they inherit the mount options from their source, so the ``noexec`` on ``/var/volatile`` carries over to both.
 
 **Fixing it.** Prefer moving the executable somewhere persistent and running it from there.
-If that is not possible, ``SULKA_HARDEN_FSTAB`` disables the mount option hardening, but you then take on setting safe options yourself.
+If that is not possible, setting ``SULKA_HARDEN_FSTAB`` to ``0`` disables the mount option hardening, but you then take on setting safe options yourself.
 See the description of that variable in :ref:`Configuration Variables`.
 
 ps Shows Only Your Own Processes
@@ -142,7 +142,7 @@ Prebuilt binary modules and anything compiled by hand are not.
 **Fixing it.** Sign the module with the same key pair the kernel trusts, as described in :ref:`Signing External Modules`.
 If a correctly signed external module still fails to load, kernel configuration ``CONFIG_RANDSTRUCT_FULL`` may be the cause, as it changes internal structure layout.
 
-If you cannot sign your modules at all, ``SULKA_ENABLE_MODULE_SIGNING`` disables the enforcement, at a real cost to the security of the system.
+If you cannot sign your modules at all, ``SULKA_ENABLE_MODULE_SIGNING`` can be disabled to disable the enforcement, at a real cost to the security of the system.
 
 A Kernel Feature Is Missing
 ***************************
