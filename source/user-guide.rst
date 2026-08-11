@@ -438,21 +438,28 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   It is recommended to go through the options that are enabled by ``SULKA_EXTRA_COMPLIANCY``, and enable them manually if enabling the whole ``SULKA_EXTRA_COMPLIANCY`` feature is not possible.
 
-* ``SULKA_HARDEN_FSTAB`` (1)
+* ``SULKA_HARDEN_KERNEL`` (1)
 
-  This variable can be used to control whether the ``fstab`` is hardened or not.
-  Hardened ``fstab`` adds ``hidepid=2`` option to ``/proc`` mount, and ``nodev,nosuid,noexec`` options to ``/run`` and ``/var/volatile`` mounts.
+  Harden the kernel configuration. Requires `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_ to be part of the build.
+
+* ``SULKA_HARDEN_MOUNTS`` (1)
+
+  This variable can be used to control whether the mount options are hardened or not.
+  The hardening covers the default mounts of the system only.
+  Mounts that you add yourself are never touched by this variable, and hardening them is always up to you.
+
+  In ``fstab``, the hardening adds the ``hidepid=2`` option to the ``/proc`` mount, and the ``nodev,nosuid,noexec`` options to the ``/run`` and ``/var/volatile`` mounts.
   These shoud apply cleanly to the stock ``fstab`` from ``base-files`` recipe, but if you override it and your ``fstab`` differs, the hardening may not necessarily apply cleanly.
   In that situation, disable the hardening by setting this variable to ``0`` and ensure that your own ``fstab`` has secure options.
+
+  On ``systemd`` systems the hardening also adds ``noexec`` to systemd's ``tmp.mount`` unit, which is what mounts ``/tmp``.
+  ``systemd`` already mounts ``/tmp`` with ``nosuid`` and ``nodev``.
+  On ``sysvinit`` systems ``/tmp`` is a symbolic link into ``/var/volatile`` instead, and it inherits the options from that mount.
 
   Note that ``noexec`` mount option may cause issues if you run scripts or programs in ``/run`` or ``/tmp``.
   The same applies to ``/var/lib`` and ``/var/cache``, which is easy to miss: with the read-only root file system those are bind mounted from ``/var/volatile``, and they inherit the mount options, so ``noexec`` reaches them too.
   First, consider if it is possible to modify your system so that the scripts can be run elsewhere.
   If not, you'll need to disable this feature and set the hardening flags yourself.
-
-* ``SULKA_HARDEN_KERNEL`` (1)
-
-  Harden the kernel configuration. Requires `meta-sulka-kernel <https://codeberg.org/AltidSec/meta-sulka-kernel>`_ to be part of the build.
 
 * ``SULKA_INSTALL_SSH_KEYS`` (0)
 

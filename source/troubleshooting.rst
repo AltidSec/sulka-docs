@@ -112,13 +112,17 @@ Sulka mounts the volatile file systems with ``noexec``, along with ``nodev`` and
 
 .. code-block::
 
-  mount | grep -E ' /run | /var/volatile | /var/lib | /var/cache '
+  mount | grep -E ' /tmp | /run | /var/volatile | /var/lib | /var/cache '
 
 ``/var/lib`` and ``/var/cache`` are affected as well, which is less obvious.
 With the read-only root file system they are bind mounted from ``/var/volatile``, and they inherit the mount options from their source, so the ``noexec`` on ``/var/volatile`` carries over to both.
 
+``/tmp`` reaches the same end result through two different routes, depending on the init manager.
+On ``systemd`` systems ``/tmp`` is its own ``tmpfs``, mounted by systemd's ``tmp.mount`` unit, which Sulka patches to add ``noexec``.
+On ``sysvinit`` systems ``/tmp`` is a symbolic link into ``/var/volatile``, so it inherits the ``noexec`` from that mount.
+
 **Fixing it.** Prefer moving the executable somewhere persistent and running it from there.
-If that is not possible, setting ``SULKA_HARDEN_FSTAB`` to ``0`` disables the mount option hardening, but you then take on setting safe options yourself.
+If that is not possible, setting ``SULKA_HARDEN_MOUNTS`` to ``0`` disables the mount option hardening, but you then take on setting safe options yourself.
 See the description of that variable in :ref:`Configuration Variables`.
 
 ps Shows Only Your Own Processes
@@ -128,7 +132,7 @@ ps Shows Only Your Own Processes
 
 ``/proc`` is mounted with ``hidepid=2``, which hides other users' processes.
 Run the command through ``sudo`` to see the whole system, or remount with ``hidepid=0`` to verify.
-This is also controlled by ``SULKA_HARDEN_FSTAB``.
+This is also controlled by ``SULKA_HARDEN_MOUNTS``.
 
 A Kernel Module Will Not Load
 *****************************
@@ -221,5 +225,5 @@ A few build failures are Sulka-specific rather than ordinary Yocto problems:
 
 * **Missing module signing keys.** Module signing is enabled by default and the build fails without keys. See :ref:`Module Signing`.
 * **A dangling bbappend.** Many Sulka bbappends name an exact upstream recipe version, so a mismatched version fails the build rather than silently dropping the hardening. Match the Yocto release that Sulka targets.
-* **The fstab hardening did not apply.** If you ship your own ``fstab``, the hardening may not match it, and the build fails rather than leaving the mounts unhardened. Set ``SULKA_HARDEN_FSTAB`` to ``0`` and harden your own ``fstab`` instead. See ``meta-sulka-distro`` for guidance.
+* **The fstab hardening did not apply.** If you ship your own ``fstab``, the hardening may not match it, and the build fails rather than leaving the mounts unhardened. Set ``SULKA_HARDEN_MOUNTS`` to ``0`` and harden your own ``fstab`` instead. See ``meta-sulka-distro`` for guidance.
 * **Many kernel configuration warnings.** Disabling kernel modules converts many options from modules to built-ins, which Yocto reports as a mismatch between the requested and resulting configuration. See :ref:`Disabling Kernel Modules`.
