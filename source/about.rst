@@ -181,7 +181,7 @@ In addition, limited support is currently given to the previous LTS release, Sca
 The support is limited to the ``systemd`` init manager.
 The Raspberry Pi 4 hardware reference has worked in the past but is no longer supported: it may or may not work, and it is not actively tested.
 The same applies to ``sysvinit``.
-Note that this support may end after any release without warning, so it is recommended to update to Wrynose as soon as possible.
+The last release supporting Scarthgap will be the 2026.12 release (see :ref:`Releases & Versioning`), so it is recommended to start updating to Wrynose as soon as possible.
 
 Releases & Versioning
 *********************
@@ -202,18 +202,20 @@ The versioning scheme goes roughly as follows:
   In general, updating to this version should be safe, but there may still be unexpected complications, so plan accordingly.
 
 The following table shows the Sulka releases that are based on different versions of Yocto.
-The releases sharing the same row should be identical from the Sulka feature point of view, so for example documentation for the version 1.0.0 should apply to 0.6.0.
+Starting from 1.0.0 / 0.6.0, the matching releases share a common name of the form year.month, named after the month they were released in: 1.0.0 and 0.6.0 are together the 2026.06 release.
+Earlier releases have no common name.
+The releases sharing the same common release name should be identical from the Sulka feature point of view, so for example documentation for the version 1.0.0 should apply to 0.6.0.
 
-=============== =================
-Wrynose (1.n.n) Scarthgap (0.n.n)
-=============== =================
-1.0.0           0.6.0
-\               0.5.1
-\               0.5.0
-\               0.4.0
-\               0.3.0
-\               0.2.0
-=============== =================
+=========== =============== =================
+Common name Wrynose (1.n.n) Scarthgap (0.n.n)
+=========== =============== =================
+2026.06     1.0.0           0.6.0
+\           \               0.5.1
+\           \               0.5.0
+\           \               0.4.0
+\           \               0.3.0
+\           \               0.2.0
+=========== =============== =================
 
 Roadmap & Following Development
 *******************************
