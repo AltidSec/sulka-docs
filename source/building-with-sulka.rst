@@ -112,8 +112,8 @@ Review the changes before merging, as version increases signal configuration cha
 If you want to develop against the upcoming release, the ``kas-layers-development.yml`` fragment switches the Sulka layers from their pinned tags to the ``*-next`` development branches.
 Those branches are also the targets for pull requests, if you intend to contribute changes back.
 
-Using the Layers Without Forking
-********************************
+Using the Layers Without Forking kas-sulka
+******************************************
 
 Forking is the smoothest path, but it is not the only one.
 The Sulka layers can be added to an existing build, provided that the recipe versions in your build line up with the ones the layers expect.
@@ -121,6 +121,22 @@ Many of the bbappends currently name an exact upstream version, so in practice t
 If a version does not line up, the build fails with a dangling bbappend rather than quietly dropping the hardening, so you will find out immediately.
 
 Loosening this is planned. The intent is for the bbappends to follow the major version of each recipe rather than an exact one, which will make the layers considerably easier to use outside a Sulka build.
+
+Using the Hardening Without the Sulka Distro
+********************************************
+
+Adding the layers does not oblige you to build with the ``sulka`` distro.
+The hardening lives in ``meta-sulka-distro/conf/distro/include/``, and none of those files set ``DISTRO`` or any other distro identity variable, so your own distro configuration can require the whole of it in one line, exactly the way ``sulka.conf`` does:
+
+.. code-block::
+
+  require conf/distro/include/sulka-hardening.inc
+
+The recipe metadata in ``meta-sulka-distro`` and ``meta-sulka-kernel`` keys off a ``sulka-hardening`` override that this file sets, rather than off the distro name, which is what makes the hardening work under a different ``DISTRO``.
+Every feature it pulls in is still guarded by its own ``SULKA_`` variable, so the hardening can be relaxed from your build configuration as usual. See :ref:`Configuration Variables`.
+
+The file is a thin wrapper over four topic includes, ``sulka-image.inc``, ``sulka-userspace.inc``, ``sulka-kernel.inc`` and ``sulka-gplv3.inc``, which can also be required individually if you only want part of the hardening.
+Note that the ``sulka-hardening`` override is set by the wrapper alone, so requiring a topic include on its own leaves the recipe level hardening inactive unless you set the override yourself.
 
 The Development Configuration Fragment
 **************************************
