@@ -224,6 +224,6 @@ The Build Fails
 A few build failures are Sulka-specific rather than ordinary Yocto problems:
 
 * **Missing module signing keys.** Module signing is enabled by default and the build fails without keys. See :ref:`Module Signing`.
-* **A dangling bbappend.** Many Sulka bbappends name an exact upstream recipe version, so a mismatched version fails the build rather than silently dropping the hardening. Match the Yocto release that Sulka targets.
+* **A dangling bbappend.** Sulka bbappends wildcard the patch release of the recipe version they target, so a version outside that range fails the build rather than silently dropping the hardening. Match the Yocto release that Sulka targets.
 * **The fstab hardening did not apply.** If you ship your own ``fstab``, the hardening may not match it, and the build fails rather than leaving the mounts unhardened. Set ``SULKA_HARDEN_MOUNTS`` to ``0`` and harden your own ``fstab`` instead. See ``meta-sulka-distro`` for guidance.
 * **Many kernel configuration warnings.** Disabling kernel modules converts many options from modules to built-ins, which Yocto reports as a mismatch between the requested and resulting configuration. See :ref:`Disabling Kernel Modules`.

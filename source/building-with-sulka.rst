@@ -116,11 +116,12 @@ Using the Layers Without Forking kas-sulka
 ******************************************
 
 Forking is the smoothest path, but it is not the only one.
-The Sulka layers can be added to an existing build, provided that the recipe versions in your build line up with the ones the layers expect.
-Many of the bbappends currently name an exact upstream version, so in practice this means matching the Yocto release that Sulka targets.
+The Sulka layers can be added to an existing build.
+Each Sulka release targets one Yocto LTS release and ``LAYERSERIES_COMPAT`` enforces it, so start from the Sulka release that matches your targeted Yocto version (see :ref:`Supported Yocto Versions`).
+Within that LTS the Sulka bbappends wildcard the recipe patch releases, so they should apply whichever point release of ``openembedded-core`` and ``meta-openembedded`` you are on.
 If a version does not line up, the build fails with a dangling bbappend rather than quietly dropping the hardening, so you will find out immediately.
 
-Loosening this is planned. The intent is for the bbappends to follow the major version of each recipe rather than an exact one, which will make the layers considerably easier to use outside a Sulka build.
+The combinations of meta-layers each release is tested against are the ones pinned in `kas Sulka <https://codeberg.org/AltidSec/kas-sulka>`_.
 
 Using the Hardening Without the Sulka Distro
 ********************************************
