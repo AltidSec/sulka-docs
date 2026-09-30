@@ -209,6 +209,7 @@ The releases sharing the same common release name should be identical from the S
 =========== =============== =================
 Common name Wrynose (1.n.n) Scarthgap (0.n.n)
 =========== =============== =================
+2026.09     1.1.0           0.7.0
 2026.06     1.0.0           0.6.0
 \           \               0.5.1
 \           \               0.5.0
@@ -216,6 +217,8 @@ Common name Wrynose (1.n.n) Scarthgap (0.n.n)
 \           \               0.3.0
 \           \               0.2.0
 =========== =============== =================
+
+See :ref:`Release Notes` for the changes in each release.
 
 Roadmap & Following Development
 *******************************

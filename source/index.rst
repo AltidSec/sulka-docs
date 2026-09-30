@@ -32,3 +32,4 @@ Contents
    user-guide
    troubleshooting
    firmware-update
+   release-notes
