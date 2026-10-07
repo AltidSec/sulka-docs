@@ -72,7 +72,7 @@ What Sulka Does Not Do
 
 Sulka hardens the software it ships. There are neighbouring problems that it leaves to you, and you should plan for them separately:
 
-* **Verified boot.** Sulka locks down the U-Boot console, but it does not set up a verified boot chain. Nothing in the default build verifies the kernel or the root file system image before booting it.
+* **A complete verified boot chain.** Sulka can make U-Boot boot only signed kernel images, but this is off by default, as the configuration varies between platforms. In the default build nothing verifies the kernel before booting it. The root of trust that verifies U-Boot itself is platform specific and not provided and the root file system is not verified. See :ref:`Verified Boot`.
 * **Offline tampering.** A read-only root file system stops a running system from modifying itself, but it does not stop anyone from modifying the storage directly. If you need that, look into dm-verity, which Sulka does not provide.
 * **Runtime file integrity.** IMA and EVM are not enabled, as they conflict with SELinux, which Sulka does enable by default. File integrity measurement and appraisal are therefore not part of the system today.
 * **Storage encryption.** No disk or file system encryption is configured.
@@ -109,11 +109,11 @@ Maturity and Tested Scope
 Sulka is under active development, and the interfaces and defaults still change between releases.
 Go through the changes when updating the version of Sulka, and pin to a release tag rather than tracking a branch.
 
-Every release is exercised by an automated test suite covering the build itself, the Lynis and OpenSCAP audit scans, SELinux enforcement, the running processes, the logging, the kernel configuration, the file system, and the alternative build configurations.
+Every release is exercised by an automated test suite covering the build itself, the Lynis and OpenSCAP audit scans, SELinux enforcement, the running processes, the logging, the kernel configuration, the file system, the alternative build configurations, and verified boot.
 
 The actively tested scope is:
 
-* ``qemux86-64`` as the default reference machine with the full testing, and the Raspberry Pi 4 64-bit as the hardware reference with a build test
+* ``qemux86-64`` as the default reference machine with the full testing, ``qemuarm64`` as the reference machine for verified boot with the full testing, and the Raspberry Pi 4 64-bit as the hardware reference with a build test
 * ``x86_64`` and ``arm64`` architectures
 * ``systemd`` as the init manager, with ``sysvinit`` tested as the secondary option
 

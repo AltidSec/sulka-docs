@@ -218,12 +218,42 @@ You can also try disabling the kernel hardening to see if that helps by adding t
 Consider whether you can reproduce the problem on a development host instead.
 The restrictions exist precisely because these interfaces are powerful, and a device that permits debugger attachment in the field is a device that permits it for an attacker too.
 
+U-Boot Does Not Boot The Kernel
+*******************************
+
+**Symptoms.** With verified boot enabled, U-Boot prints an error after loading the FIT image and resets, and the device ends up in a reset loop:
+
+.. code-block::
+
+  Verifying Hash Integrity ... sha256,rsa4096:sulka-fit-  error!
+  Failed to verify required signature 'key-sulka-fit'
+  Bad Data Hash
+  ERROR -2: can't get kernel image!
+  No CLI available
+  resetting ...
+
+This is verified boot refusing an image it cannot verify.
+``Failed to verify required signature`` means that the configuration of the FIT image is not signed with the key built into U-Boot, and ``Bad hash value`` means that an image in the FIT image has been modified after signing.
+
+**Confirming the cause.** Check whether the FIT image and U-Boot come from builds with the same key.
+The most common cause is a FIT image signed with a new key on a device that still runs a U-Boot built with the old one, for example after regenerating the keys.
+You can verify the FIT image against the U-Boot control device tree on the build host with ``fit_check_sign`` from the ``u-boot-tools`` package:
+
+.. code-block::
+
+  fit_check_sign -f fitImage -k u-boot.dtb
+
+**Fixing it.** Update U-Boot together with the FIT image, or sign the FIT image with the key U-Boot was built with.
+If U-Boot prints nothing about the FIT image, check that the boot command of the machine loads the FIT image and boots it with ``bootm``, as the verified boot feature of Sulka disables the commands that boot other image types.
+See :ref:`Verified Boot`.
+
 The Build Fails
 ***************
 
 A few build failures are Sulka-specific rather than ordinary Yocto problems:
 
 * **Missing module signing keys.** Module signing is enabled by default and the build fails without keys. See :ref:`Module Signing`.
+* **Incomplete verified boot configuration.** With verified boot enabled, the build fails if the key given with ``UBOOT_SIGN_KEYDIR`` and ``UBOOT_SIGN_KEYNAME`` does not exist, if ``SULKA_FIT_IMAGE_RECIPE`` is not set, or if the bootloader is not U-Boot. See :ref:`Signing Keys` and :ref:`Machine Integration`.
 * **A dangling bbappend.** Sulka bbappends wildcard the patch release of the recipe version they target, so a version outside that range fails the build rather than silently dropping the hardening. Match the Yocto release that Sulka targets.
 * **The fstab hardening did not apply.** If you ship your own ``fstab``, the hardening may not match it, and the build fails rather than leaving the mounts unhardened. Set ``SULKA_HARDEN_MOUNTS`` to ``0`` and harden your own ``fstab`` instead. See ``meta-sulka-distro`` for guidance.
 * **Many kernel configuration warnings.** Disabling kernel modules converts many options from modules to built-ins, which Yocto reports as a mismatch between the requested and resulting configuration. See :ref:`Disabling Kernel Modules`.

@@ -377,6 +377,114 @@ Check ``meta-sulka-bsp/recipes-bsp/u-boot/u-boot/sulka_harden_configuration.cfg`
 
 Note that the external environment **should not** contain critical boot information that may result in losing control of the boot flow.
 
+Verified Boot
+=============
+
+Sulka supports verified boot from U-Boot onwards.
+With verified boot, U-Boot boots only FIT images whose configuration is signed with your key.
+The FIT image contains the kernel and the device tree, and the signed configuration covers the hashes of both, so modifying either of them, signing the image with another key or removing the signature makes U-Boot refuse to boot it.
+When U-Boot refuses an image, it resets without opening the command line interface.
+
+Verified boot is disabled by default, as it needs integration work for each machine.
+It is enabled on the ``qemuarm64`` reference, see :ref:`Running the Reference`.
+
+Verified boot covers the following parts of the boot:
+
+* U-Boot verifies the FIT image with the public key in its control device tree.
+  The key is added there at build time, and U-Boot uses the control device tree built into it rather than one passed by an earlier boot stage.
+* The kernel command line comes from U-Boot's built-in configuration, as Sulka disables the external U-Boot environments.
+* U-Boot cannot boot anything other than signed FIT images.
+  Sulka disables the legacy image format, standard boot, which runs boot scripts and EFI binaries from the disks without verifying them, and the ``booti``, ``bootz`` and ``bootefi`` commands, which boot unsigned images.
+  See ``meta-sulka-bsp/recipes-bsp/u-boot/u-boot/sulka_verified_boot.cfg`` for the configuration.
+
+Verified boot does **not** cover the following:
+
+* **U-Boot itself.** Something has to verify U-Boot, and the public key built into it, before U-Boot is run.
+  This root of trust is specific to the platform, for example a boot ROM that verifies the first boot stage with a key fused into the SoC, so Sulka does not provide it.
+  Without it, an attacker who can write to the storage can replace U-Boot together with the key.
+* **The root file system.** The kernel mounts the root file system without verifying it.
+* **Rollback.** U-Boot boots any FIT image signed with your key, including old ones with known vulnerabilities.
+
+Signing Keys
+------------
+
+The FIT image is signed with the key ``UBOOT_SIGN_KEYNAME`` from the directory ``UBOOT_SIGN_KEYDIR``.
+Generate a key pair with the ``generate_fit_signing_keys.sh`` script in `kas-sulka <https://codeberg.org/AltidSec/kas-sulka/src/branch/wrynose/scripts/generate_fit_signing_keys.sh>`__, and point the build to it:
+
+.. code-block::
+
+   ./scripts/generate_fit_signing_keys.sh
+
+.. code-block::
+
+   UBOOT_SIGN_KEYDIR = "/path/to/fit-keys"
+   UBOOT_SIGN_KEYNAME = "sulka-fit"
+
+The build fails if the key does not exist.
+The script stores the private key unencrypted, which is fine for development.
+Anyone with access to the private key can sign images that your devices boot, so generate and keep the production keys in a protected location, such as a hardware security module.
+
+The public key is built into U-Boot, so changing the key also requires updating U-Boot on the devices.
+
+The configurations are signed with RSA-4096 and SHA-256.
+The images in the FIT image are not signed individually, as that would allow combining signed images from different FIT images.
+
+Machine Integration
+-------------------
+
+Sulka provides the U-Boot configuration and the signing configuration of the FIT image.
+Enabling verified boot also requires ``meta-sulka-bsp`` in the build.
+The machine configuration has to provide the rest:
+
+* The recipe that builds the FIT image, set with ``SULKA_FIT_IMAGE_RECIPE``, such as ``linux-yocto-fitimage``.
+  The build fails if it is not set.
+* A disk image that contains the FIT image (for example, a ``wks`` file), and the root file system written with ``SULKA_ROOTFS_IMAGE_TYPE``.
+* The U-Boot boot command that loads the FIT image and boots it with ``bootm``, and the kernel command line.
+* The load address and entry point of the kernel, with ``UBOOT_LOADADDRESS`` and ``UBOOT_ENTRYPOINT``.
+* The device tree, both in the FIT image and as the U-Boot control device tree.
+  The public key is added to the device tree U-Boot is built with, so the board must not replace it with a device tree passed by an earlier boot stage.
+
+``qemuarm64`` is the reference machine for verified boot.
+See ``extra_fragments/qemuarm64.yml`` in kas-sulka for its configuration, ``meta-sulka-bsp`` for its U-Boot configuration and device tree, and ``files/wic/`` in ``meta-sulka-distro`` for its disk image layout.
+QEMU generates the device tree of the virtual machine at run time, so the reference dumps it at build time to build it into U-Boot.
+
+Running the Reference
+---------------------
+
+``qemux86-64``, the default reference machine, does not use U-Boot, so verified boot is built and tested on ``qemuarm64`` instead.
+The ``qemuarm64.yml`` fragment enables verified boot, so generate the signing keys and add them to ``kas-sulka-configuration.yml`` as described above before building:
+
+.. code-block::
+
+   kas build kas-sulka.yml:extra_fragments/qemuarm64.yml
+
+To build ``qemuarm64`` without verified boot, set ``SULKA_ENABLE_VERIFIED_BOOT = "0"`` in ``kas-sulka-configuration.yml``.
+
+QEMU runs U-Boot, which loads the FIT image from the disk image.
+Give the disk image to ``runqemu`` explicitly, as ``runqemu`` may otherwise boot an earlier disk image when only the disk image has been rebuilt:
+
+.. code-block::
+
+   kas shell kas-sulka.yml:extra_fragments/qemuarm64.yml \
+     -c 'runqemu nographic slirp tmp/deploy/images/qemuarm64/core-image-base-qemuarm64.rootfs.wic'
+
+U-Boot prints the result of the verification to the serial console:
+
+.. code-block::
+
+   Verifying Hash Integrity ... sha256,rsa4096:sulka-fit+ OK
+
+The device tree describes the memory size of the virtual machine, so do not change the memory size (or other machine parameters) given to QEMU.
+
+U-Boot also prints the following warning at startup:
+
+.. code-block::
+
+   Warning: Unexpected devicetree source (not from a prior stage)Warning: U-Boot may not function properly
+
+This is expected.
+U-Boot for the QEMU arm machines normally uses the device tree QEMU passes to it, but the reference builds the device tree into U-Boot, so that it carries the public key.
+
 Configuration Variables
 ***********************
 
@@ -420,6 +528,13 @@ This chapter covers the configuration items in Sulka. The default value for each
   For ensuring the integrity of the root file system, it is recommended to keep this ``1``.
   See :ref:`Read-Only Root File System` for more information.
 
+* ``SULKA_ENABLE_VERIFIED_BOOT`` (0)
+
+  Set this option to ``1`` to make U-Boot boot only signed FIT images.
+  This requires U-Boot as the bootloader, a signing key, and integration in the machine configuration.
+  The ``qemuarm64`` reference in kas-sulka enables it.
+  See :ref:`Verified Boot` for more information.
+
 * ``SULKA_EXPIRE_PASSWORDS`` (0)
 
   Set the passwords to expire in the system.
@@ -437,6 +552,13 @@ This chapter covers the configuration items in Sulka. The default value for each
   * ``SULKA_EXPIRE_PASSWORDS``
 
   It is recommended to go through the options that are enabled by ``SULKA_EXTRA_COMPLIANCY``, and enable them manually if enabling the whole ``SULKA_EXTRA_COMPLIANCY`` feature is not possible.
+
+* ``SULKA_FIT_IMAGE_RECIPE`` ("")
+
+  The recipe that builds the signed FIT image, such as ``linux-yocto-fitimage``.
+  Required when verified boot is enabled, and set where verified boot is enabled.
+  The ``qemuarm64`` reference in kas-sulka sets it to ``linux-yocto-fitimage``.
+  See :ref:`Machine Integration`.
 
 * ``SULKA_HARDEN_KERNEL`` (1)
 
@@ -484,6 +606,16 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   The firewall configuration that gets installed to the system and is used as the default firewall configuration.
   See :ref:`Firewall` for more information.
+
+* ``SULKA_ROOTFS_IMAGE_TYPE`` ("ext4", "erofs" with the read-only root file system)
+
+  The image type of the root file system that a disk image should contain, for example in a Wic kickstart file:
+
+  .. code-block::
+
+     part / --source rawcopy --sourceparams="file=${IMGDEPLOYDIR}/${IMAGE_LINK_NAME}.${SULKA_ROOTFS_IMAGE_TYPE}"
+
+  The variable follows the Sulka options that change the image type, so a disk image that uses it does not have to be changed with them.
 
 * ``SULKA_RUGIX_ROOT_CERT`` (no default value)
 
