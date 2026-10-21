@@ -19,7 +19,7 @@ The distro hardening is achieved by performing the following tasks by default:
 * Enforcing mandatory access control with SELinux
 * Hardening the kernel configuration and the runtime ``sysctl`` settings
 * Enforcing kernel module signing to prevent unsigned code from being loaded into the kernel
-* Mounting the root file system read-only
+* Mounting the root file system read-only, and verifying it with dm-verity
 * Locking down the bootloader console on the reference hardware
 * Collecting audit logs, and producing a software bill of materials for every image
 
@@ -72,8 +72,8 @@ What Sulka Does Not Do
 
 Sulka hardens the software it ships. There are neighbouring problems that it leaves to you, and you should plan for them separately:
 
-* **A complete verified boot chain.** Sulka can make U-Boot boot only signed kernel images, but this is off by default, as the configuration varies between platforms. In the default build nothing verifies the kernel before booting it. The root of trust that verifies U-Boot itself is platform specific and not provided and the root file system is not verified. See :ref:`Verified Boot`.
-* **Offline tampering.** A read-only root file system stops a running system from modifying itself, but it does not stop anyone from modifying the storage directly. If you need that, look into dm-verity, which Sulka does not provide.
+* **A complete verified boot chain.** Sulka can make U-Boot boot only signed kernel images, but this is off by default, as the configuration varies between platforms. In the default build nothing verifies the kernel before booting it. The root of trust that verifies U-Boot itself is platform specific and not provided. See :ref:`Verified Boot`.
+* **Offline tampering.** dm-verity makes the kernel refuse the root file system blocks that have been modified on the storage, but the root hash it checks them against is in the initramfs. Without verified boot nothing verifies the initramfs, so anyone who can write to the storage can replace it together with the root file system. Writable partitions you add are not covered by dm-verity either. See :ref:`dm-verity`.
 * **Runtime file integrity.** IMA and EVM are not enabled, as they conflict with SELinux, which Sulka does enable by default. File integrity measurement and appraisal are therefore not part of the system today.
 * **Storage encryption.** No disk or file system encryption is configured.
 * **Hardware roots of trust.** TPM and secure element integration are out of scope. ``meta-security`` ships ``meta-tpm`` and ``meta-parsec`` layers that Sulka does not include, and you can add them to your own build.

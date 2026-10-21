@@ -22,7 +22,7 @@ If you do not want to create a fork, you can manually set up the project structu
 Forking gives you the following files, which come from upstream Sulka:
 
 ``kas-sulka.yml``
-  The top-level configuration that selects the machine, the distro and the target image, and includes the two files below.
+  The top-level configuration that selects the machine, the distro and the target image, sets ``DM_VERITY_IMAGE`` to the target image, and includes the two files below.
 
 ``kas-layers.yml``
   The layer repositories and the revisions they are pinned to.
@@ -51,7 +51,7 @@ It is still recommended to keep them in a configuration file of your own, so tha
 That separation is also what keeps merging upstream updates uneventful.
 
 kas writes each ``local_conf_header`` block into ``local.conf`` in the order of the block keys, so the numeric prefix on the key decides who wins when two blocks set the same variable.
-Sulka uses ``10-kas-sulka`` for its own base configuration, and the bundled fragments use ``30-`` and ``50-`` prefixes.
+Sulka uses ``05-kas-sulka`` and ``10-kas-sulka`` for its own base configuration, and the bundled fragments use prefixes up to ``50-``.
 Use a prefix above those in your own configuration so that your settings are applied last:
 
 .. code-block::
@@ -59,14 +59,18 @@ Use a prefix above those in your own configuration so that your settings are app
   header:
     version: 1
   machine: my-machine
+  target: my-image
   local_conf_header:
     60-my-product: |
+      DM_VERITY_IMAGE = "my-image"
       SULKA_SERVICEUSER_USERNAME = "operator"
       SULKA_DISABLE_GRAPHICS = "0"
   repos:
     meta-my-product:
       url: https://example.com/meta-my-product.git
       branch: main
+
+``DM_VERITY_IMAGE`` is set to the target image, as dm-verity protects the root file system of that image only, see :ref:`dm-verity`.
 
 The quick start suggests editing files inside the Sulka layers directly, for example the firewall template or the sudo configuration.
 That is fine while you are trying Sulka out, but for a real project prefer overriding those from your own layer, so that you are not carrying local modifications to Sulka files across every update.
@@ -82,10 +86,12 @@ SELinux is enabled by default with the ``targeted`` reference policy, so your ow
 When something fails for no apparent reason, the audit log (``/var/log/audit/audit.log``) is the first place to look, and services that need permissions the existing policy does not grant will need a policy module of their own.
 
 The root file system is read-only by default, so anything that expects to write outside the designated writable locations will fail.
+It is also protected with dm-verity, so the root file system image cannot be modified after it has been built.
+Note that without verified boot, nothing protects the root hash dm-verity checks the image against.
 
 Kernel module signing is enforced, so modules built through their own Yocto recipes are signed for you, but prebuilt binary modules are not.
 
-See :ref:`SELinux`, :ref:`Read-Only Root File System` and :ref:`Signing External Modules`.
+See :ref:`SELinux`, :ref:`Read-Only Root File System`, :ref:`dm-verity` and :ref:`Signing External Modules`.
 
 Integration Layers
 ******************

@@ -239,6 +239,9 @@ The script generates a certificate authority and signs both a module signing cer
 This is the shared signing key infrastructure only.
 IMA and EVM themselves are not enabled in Sulka, as they conflict with SELinux, so the keys they would use are generated but not put to work.
 
+Keep the generated keys, and use the same keys in every build that uses the same shared state cache.
+Otherwise, the modules and the kernel may end up using different keys when the modules are pulled from sstate if your kernel recipe does not inherit ``sulka-kernel-hardening.bbclass``.
+
 Module signing is controlled with the ``SULKA_ENABLE_MODULE_SIGNING`` option, which defaults to ``1``.
 If you cannot provide signing keys, you can disable the feature by setting ``SULKA_ENABLE_MODULE_SIGNING = "0"`` in your build configuration.
 This is **not** recommended, as it leaves the kernel able to load unsigned modules.
@@ -286,7 +289,19 @@ You can confirm that a module carries a signature by checking for the signature 
 
 On the target, the kernel logs a message if it rejects an unsigned or incorrectly signed module.
 If a module fails to load with module signing enabled, verify that it was signed with the correct key pair and that the same key is trusted by the running kernel.
-You may also need to disable ``CONFIG_RANDSTRUCT_FULL`` enabled by Sulka configuration, as that may cause problems when loading external modules.
+Prebuilt and out-of-tree modules can also fail to load because of ``CONFIG_RANDSTRUCT_FULL``, which Sulka enables unless the initramfs is bundled into the kernel image, see :ref:`Initramfs`.
+It randomizes the layout of sensitive kernel structures with a seed generated when the kernel is compiled, so a module works only with the kernel build it was compiled against.
+A module built against another build of the kernel is rejected even when it is signed correctly.
+
+If your kernel recipe or bbappend inherits ``sulka-kernel-hardening``, it disables randstruct automatically when the initramfs is bundled into the kernel image.
+To disable it in other cases, for example for prebuilt modules, add the following to the kernel features in a bbappend in a meta-layer with a higher ``BBFILE_PRIORITY`` than the Sulka layers:
+
+.. code-block::
+
+   # linux-custom_%.bbappend
+   KERNEL_FEATURES:append = " features/sulka-security/sulka-no-randstruct.scc"
+
+Disabling it weakens the self-protection of the kernel, so disable it only when necessary.
 
 Read-Only Root File System
 **************************
@@ -296,7 +311,7 @@ Read-only root file system is controlled with ``SULKA_ENABLE_READ_ONLY_ROOTFS`` 
 To disable read-only root file system, set the option to ``0``.
 
 This option adds ``erofs`` (enhanced read-only file system) to the ``IMAGE_FSTYPES``.
-``erofs`` is used by default with ``runqemu`` command, but you'll need to manually add this to your Wic-images (or whatever you are using to build your images).
+``erofs`` is used by default with ``runqemu`` command, or ``erofs.verity`` with dm-verity, but you'll need to manually add this to your Wic-images (or whatever you are using to build your images).
 The option also adds ``read-only-rootfs`` to ``EXTRA_IMAGE_FEATURES``, in practice mounting the rootfs read-only, adding some read-only compatible configurations, and ensuring that there are no on-target post-installation tasks.
 Finally, the option attempts to add ``ro`` kernel command-line parameter with ``APPEND`` and ``CMDLINE`` variables, but you should ensure that it gets properly added on your system.
 
@@ -311,8 +326,72 @@ You may want to add writable locations to your images. There are a few ways to a
 * Bind mounts. Bind mounts allow mounting individual directories as required. The mounted directory can be on an extra partition or ``tmpfs``, depending on whether you want to store the information.
 * Symlinks. Symlinks can be created in the root file system for files that are expected to be writable. These links can then point to writable partitions or ``tmpfs`` locations.
 
-Note that this feature does not prevent offline modifications to the file system.
-To add integrity checking to the root file system, look into dm-verity.
+Note that the read-only mount alone does not prevent offline modifications to the file system.
+dm-verity, which is enabled by default with the read-only root file system, detects them.
+Without verified boot, nothing protects the root hash it checks them against, see :ref:`dm-verity`.
+
+dm-verity
+*********
+
+Sulka protects the read-only root file system with dm-verity by default.
+At build time, a hash tree of the root file system image is appended to the image, and the root hash of the tree is stored in a minimal initramfs.
+At boot, the initramfs sets up the root file system as a dm-verity device with that root hash and mounts it.
+The kernel then checks every block it reads from the root file system against the hash tree, and refuses the blocks that do not match.
+
+dm-verity is controlled with the ``SULKA_ENABLE_DM_VERITY`` option.
+It is enabled by default whenever the read-only root file system is enabled.
+It requires the read-only root file system, and the build fails if it is enabled with a writable rootfs.
+To disable dm-verity, set the option to ``0``.
+
+dm-verity protects the root file system of the image recipe set in ``DM_VERITY_IMAGE``, and the initramfs holds the root hash of that image.
+Sulka cannot know which image you build, so it does not set ``DM_VERITY_IMAGE``, and the build fails if dm-verity is enabled without it.
+Set it to your target image, for example ``DM_VERITY_IMAGE = "core-image-base"``.
+``kas-sulka.yml`` sets it to ``core-image-base``, which is its target image, so set it again if your configuration builds another image.
+
+How far you can trust the root hash depends on verified boot:
+
+* With verified boot, the initramfs is part of the signed FIT image, so the root hash is covered by the signature.
+  U-Boot verifies the kernel and the initramfs, and the kernel verifies the root file system.
+* Without verified boot, the initramfs is bundled into the kernel image, but nothing verifies the kernel image.
+  dm-verity still detects corruption and modifications of the root file system alone, but anyone who can write to the storage can replace the kernel image, and the root hash in it, together with the root file system.
+  See :ref:`Verified Boot`.
+
+dm-verity changes the build in the following ways:
+
+* The root file system image type becomes ``erofs.verity``, which is the ``erofs`` image with the hash tree appended.
+  ``SULKA_ROOTFS_IMAGE_TYPE`` follows it, so a disk image that uses the variable writes the hash tree too.
+  A disk image that writes the plain ``erofs`` image has no hash tree, and does not boot.
+* The initramfs finds the root file system with the ``root=`` kernel command line parameter, which has to be a device path such as ``/dev/vda``.
+  For ``root=PARTUUID=``, ``UUID=`` or ``LABEL=``, add ``initramfs-module-udev`` and ``base-passwd`` to the initramfs with ``SULKA_INITRAMFS_EXTRA_INSTALL``.
+* The initramfs is rebuilt on every build, even when nothing has changed, and so are the images that contain it.
+  Without verified boot, that is the kernel image the initramfs is bundled into.
+  With verified boot, it is the FIT image and the disk image that contains the FIT image.
+  The hash tree salt and the file system UUID are random, so the root hash changes whenever the root file system image is built, and an initramfs from an earlier build or from the shared state cache could hold a root hash that no longer matches.
+
+The root file system image cannot be modified after it has been built.
+Changing even one byte of it makes the reads of that block fail with input/output errors.
+See :ref:`dm-verity Refuses The Root File System`.
+Make the changes in the image recipes instead.
+
+Disabling dm-verity alone does not make the root file system modifiable, as it is still a read-only ``erofs`` image.
+Disable the read-only root file system with ``SULKA_ENABLE_READ_ONLY_ROOTFS``, which disables dm-verity too, see :ref:`Read-Only Root File System`.
+
+Initramfs
+*********
+
+``sulka-image-initramfs`` is a minimal initramfs based on ``initramfs-framework`` and the ``core-image-initramfs-boot`` image of ``openembedded-core``.
+It is built and used only when a feature needs it, which is currently only dm-verity, or when ``SULKA_ENABLE_INITRAMFS`` is set to ``1``.
+It always contains the initramfs framework and BusyBox, and the rest depends on the enabled features:
+
+* With dm-verity, it contains the ``dmverity`` module, which sets up and mounts the verified root file system, and ``cryptsetup`` for ``veritysetup``.
+* Without dm-verity, it contains the ``rootfs`` module, which mounts the root file system without verification.
+
+Recommended packages are not installed.
+``SULKA_INITRAMFS_EXTRA_INSTALL`` adds packages to the initramfs.
+
+With verified boot, the initramfs is added to the FIT image.
+Otherwise it is bundled into the kernel image, and the ``sulka-kernel-hardening`` class of ``meta-sulka-kernel`` disables ``CONFIG_RANDSTRUCT_FULL``, which its kernel hardening otherwise enables.
+Bundling compiles the kernel again with a new structure layout seed, while the kernel modules can come from the shared state cache with the old one, and the kernel refuses to load them if randstruct is enabled.
 
 Bootloader (U-Boot)
 *******************
@@ -382,7 +461,7 @@ Verified Boot
 
 Sulka supports verified boot from U-Boot onwards.
 With verified boot, U-Boot boots only FIT images whose configuration is signed with your key.
-The FIT image contains the kernel and the device tree, and the signed configuration covers the hashes of both, so modifying either of them, signing the image with another key or removing the signature makes U-Boot refuse to boot it.
+The FIT image contains the kernel, the device tree and, with dm-verity, the initramfs, and the signed configuration covers the hashes of all of them, so modifying any of them, signing the image with another key or removing the signature makes U-Boot refuse to boot it.
 When U-Boot refuses an image, it resets without opening the command line interface.
 
 Verified boot is disabled by default, as it needs integration work for each machine.
@@ -402,7 +481,9 @@ Verified boot does **not** cover the following:
 * **U-Boot itself.** Something has to verify U-Boot, and the public key built into it, before U-Boot is run.
   This root of trust is specific to the platform, for example a boot ROM that verifies the first boot stage with a key fused into the SoC, so Sulka does not provide it.
   Without it, an attacker who can write to the storage can replace U-Boot together with the key.
-* **The root file system.** The kernel mounts the root file system without verifying it.
+* **The root file system without dm-verity.** With dm-verity, which is enabled by default, the root hash is in the signed initramfs, so the root file system is verified too.
+  With dm-verity disabled, the kernel mounts the root file system without verifying it.
+  See :ref:`dm-verity`.
 * **Rollback.** U-Boot boots any FIT image signed with your key, including old ones with known vulnerabilities.
 
 Signing Keys
@@ -509,6 +590,21 @@ This chapter covers the configuration items in Sulka. The default value for each
   If you have binary drivers that you cannot compile yourself, or you build out-of-tree modules, this option is not suitable for you.
   See :ref:`Disabling Kernel Modules` for more information.
 
+* ``SULKA_ENABLE_DM_VERITY`` (1 with the read-only root file system, 0 otherwise)
+
+  Set this option to ``0`` to mount the read-only root file system without dm-verity.
+  dm-verity makes the kernel refuse the root file system blocks that do not match the root hash stored in the initramfs.
+  It requires the read-only root file system, and ``DM_VERITY_IMAGE`` set to your target image.
+  See :ref:`dm-verity` for more information.
+
+* ``SULKA_ENABLE_INITRAMFS`` (1 when a feature needs the initramfs, 0 otherwise)
+
+  Build ``sulka-image-initramfs`` and boot with it.
+  The features that need the initramfs, currently only dm-verity, enable it, and the build fails if this is ``0`` while such a feature is enabled.
+  With verified boot the initramfs is added to the FIT image, otherwise it is bundled into the kernel image.
+  Set this to ``1`` to use the initramfs without such a feature.
+  See :ref:`Initramfs` for more information.
+
 * ``SULKA_ENABLE_MODULE_SIGNING`` (1)
 
   Set this option to ``0`` to disable module signing.
@@ -583,6 +679,11 @@ This chapter covers the configuration items in Sulka. The default value for each
   First, consider if it is possible to modify your system so that the scripts can be run elsewhere.
   If not, you'll need to disable this feature and set the hardening flags yourself.
 
+* ``SULKA_INITRAMFS_EXTRA_INSTALL`` ("")
+
+  Additional packages to install into the initramfs, for example ``initramfs-module-udev`` and ``base-passwd`` when the root device is given as ``root=PARTUUID=``, ``UUID=`` or ``LABEL=``.
+  See :ref:`Initramfs` for more information.
+
 * ``SULKA_INSTALL_SSH_KEYS`` (0)
 
   Install SSH public key information into the firmware image.
@@ -607,7 +708,7 @@ This chapter covers the configuration items in Sulka. The default value for each
   The firewall configuration that gets installed to the system and is used as the default firewall configuration.
   See :ref:`Firewall` for more information.
 
-* ``SULKA_ROOTFS_IMAGE_TYPE`` ("ext4", "erofs" with the read-only root file system)
+* ``SULKA_ROOTFS_IMAGE_TYPE`` ("ext4", "erofs" with the read-only root file system, "erofs.verity" with dm-verity)
 
   The image type of the root file system that a disk image should contain, for example in a Wic kickstart file:
 

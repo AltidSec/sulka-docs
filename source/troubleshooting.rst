@@ -144,9 +144,28 @@ Modules built through their own Yocto recipes are signed during the build.
 Prebuilt binary modules and anything compiled by hand are not.
 
 **Fixing it.** Sign the module with the same key pair the kernel trusts, as described in :ref:`Signing External Modules`.
-If a correctly signed external module still fails to load, kernel configuration ``CONFIG_RANDSTRUCT_FULL`` may be the cause, as it changes internal structure layout.
+If a correctly signed prebuilt or out-of-tree module still fails to load, ``CONFIG_RANDSTRUCT_FULL`` may be the cause.
+It randomizes the internal structure layout of each kernel build, so a module built against another build of the kernel does not fit it.
+Build the module against the exact kernel build, or disable ``CONFIG_RANDSTRUCT_FULL`` with the ``sulka-no-randstruct`` feature, as described in :ref:`Signing External Modules`.
 
 If you cannot sign your modules at all, ``SULKA_ENABLE_MODULE_SIGNING`` can be disabled to disable the enforcement, at a real cost to the security of the system.
+
+**Modules signed with other keys.**
+Modules that ship in the image can also fail to load when they were signed with other keys than the ones built into the kernel.
+The kernel log shows ``Loading of module with unavailable key is rejected``, and ``modprobe`` reports ``Key was rejected by service``.
+The firewall is often the first to show it, as the ``nftables`` service fails at boot with errors like ``Could not process rule: No such file or directory``.
+
+This happens when new keys are generated at the same path while the shared state cache holds modules signed with the old ones, for example when each build job generates its own keys and the jobs share a cache.
+The task hashes of the kernel normally contain only the paths of the keys, so the module packages are restored from the cache, while the kernel can be built again with the new keys, for example when the initramfs is bundled into it.
+``meta-sulka-kernel`` adds the contents of the keys to the task hashes of the kernels that inherit ``sulka-kernel-hardening``, so new keys build the kernel and its modules again.
+A kernel recipe that does not inherit the class can still mix them.
+
+**Fixing it.** When builds share a shared state cache, generate the keys once and point every build at them.
+To recover a build, remove the kernel's entries from the cache and build again; pass the same configuration files you build with:
+
+.. code-block::
+
+  kas shell kas-sulka.yml -c 'bitbake -c cleansstate virtual/kernel'
 
 A Kernel Feature Is Missing
 ***************************
@@ -247,6 +266,53 @@ You can verify the FIT image against the U-Boot control device tree on the build
 If U-Boot prints nothing about the FIT image, check that the boot command of the machine loads the FIT image and boots it with ``bootm``, as the verified boot feature of Sulka disables the commands that boot other image types.
 See :ref:`Verified Boot`.
 
+dm-verity Refuses The Root File System
+**************************************
+
+**Symptoms.** The console or the kernel log shows dm-verity refusing blocks of the root file system:
+
+.. code-block::
+
+  device-mapper: verity: 253:0: data block 10807 is corrupted
+
+The reads of the refused blocks fail with input/output errors, and what happens next depends on what the blocks contain.
+If they are needed to boot, the boot stops with a kernel panic.
+For example, with a modified block in the C library, ``init`` cannot start:
+
+.. code-block::
+
+  /sbin/init: error while loading shared libraries: /lib/libc.so.6: cannot read file data: Input/output error
+  Kernel panic - not syncing: Attempted to kill init! exitcode=0x00007f00
+
+Otherwise the system boots, and only the programs that read the modified files fail.
+
+When the whole root file system comes from another build than the root hash in the initramfs, dm-verity refuses the metadata blocks of the hash tree too, the initramfs cannot mount the root file system, and the kernel panics:
+
+.. code-block::
+
+  device-mapper: verity: 253:0: metadata block 52248 is corrupted
+  erofs (device dm-0): cannot read erofs superblock
+  mount: mounting /dev/mapper/rootfs on /rootfs failed: Invalid argument
+  Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000200
+
+If the image on the storage has no hash tree at all, the console shows ``Device /dev/vda is not a valid VERITY device.`` instead, with the same kernel panic.
+
+**Confirming the cause.** Check that the root file system on the storage and the kernel image, or the FIT image with verified boot, come from the same build.
+The most common causes are a root file system image that has been modified after the build, a disk image that contains the plain ``erofs`` image instead of ``erofs.verity``, and updating only one of the two.
+Under QEMU, ``runqemu`` can also boot the root file system image of an earlier build when only the image (but not rootfs) has been rebuilt, as it looks first for the image named in the ``qemuboot.conf`` file, which is only written when the root file system is built.
+
+**Fixing it.** Write the root file system and the kernel image from the same build, and make your changes in the image recipes rather than in the built image.
+If you need to modify the root file system after the build, disabling dm-verity is not enough, as the root file system is still a read-only ``erofs`` image.
+Disable the read-only root file system with ``SULKA_ENABLE_READ_ONLY_ROOTFS``, which disables dm-verity too.
+See :ref:`dm-verity`.
+
+Under QEMU, give the root file system image to ``runqemu`` explicitly:
+
+.. code-block::
+
+  kas shell kas-sulka.yml \
+    -c 'runqemu nographic slirp tmp/deploy/images/qemux86-64/core-image-base-qemux86-64.rootfs.erofs.verity'
+
 The Build Fails
 ***************
 
@@ -254,6 +320,8 @@ A few build failures are Sulka-specific rather than ordinary Yocto problems:
 
 * **Missing module signing keys.** Module signing is enabled by default and the build fails without keys. See :ref:`Module Signing`.
 * **Incomplete verified boot configuration.** With verified boot enabled, the build fails if the key given with ``UBOOT_SIGN_KEYDIR`` and ``UBOOT_SIGN_KEYNAME`` does not exist, if ``SULKA_FIT_IMAGE_RECIPE`` is not set, or if the bootloader is not U-Boot. See :ref:`Signing Keys` and :ref:`Machine Integration`.
+* **dm-verity with a writable root file system.** dm-verity requires the read-only root file system, so the build fails if ``SULKA_ENABLE_DM_VERITY`` is ``1`` while ``SULKA_ENABLE_READ_ONLY_ROOTFS`` is ``0``. See :ref:`dm-verity`.
+* **dm-verity without the target image.** dm-verity protects the image set in ``DM_VERITY_IMAGE``, and the build fails if it is not set. Set it to your target image. See :ref:`dm-verity`.
 * **A dangling bbappend.** Sulka bbappends wildcard the patch release of the recipe version they target, so a version outside that range fails the build rather than silently dropping the hardening. Match the Yocto release that Sulka targets.
 * **The fstab hardening did not apply.** If you ship your own ``fstab``, the hardening may not match it, and the build fails rather than leaving the mounts unhardened. Set ``SULKA_HARDEN_MOUNTS`` to ``0`` and harden your own ``fstab`` instead. See ``meta-sulka-distro`` for guidance.
 * **Many kernel configuration warnings.** Disabling kernel modules converts many options from modules to built-ins, which Yocto reports as a mismatch between the requested and resulting configuration. See :ref:`Disabling Kernel Modules`.
