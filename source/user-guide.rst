@@ -637,6 +637,10 @@ This chapter covers the configuration items in Sulka. The default value for each
   This is disabled by default, as this requirement does not usually translate well into embedded systems.
   However, if you perform user management on the Linux user-space level, it is recommended to enable this.
 
+  An expired password must be changed at the next login, which needs a writable ``/etc``.
+  With the read-only root file system, the change fails and nobody can log in, so the build fails if both are enabled.
+  See ``SULKA_WRITABLE_PASSWORD_STORAGE`` if your partition layout keeps ``/etc`` writable.
+
 * ``SULKA_EXTRA_COMPLIANCY`` (0)
 
   Enable the extra compliancy settings that may be required by some audits and compliancy checks.
@@ -753,3 +757,12 @@ This chapter covers the configuration items in Sulka. The default value for each
 
   The password that can be used to log in to the U-boot command line interface.
   By default, no password is set and the command line interface is inaccessible.
+
+* ``SULKA_WRITABLE_PASSWORD_STORAGE`` (0)
+
+  Set this option to ``1`` to allow ``SULKA_EXPIRE_PASSWORDS`` together with the read-only root file system.
+  Without it, the build fails when both are enabled, because the expired password cannot be changed on a read-only root file system and nobody can log in.
+  ``SULKA_EXTRA_COMPLIANCY`` enables ``SULKA_EXPIRE_PASSWORDS`` too.
+  Set this only if your partition layout keeps ``/etc`` writable, for example with a writable partition mounted there.
+  PAM replaces ``/etc/shadow`` through a temporary file in ``/etc``, so a writable ``/etc/shadow`` alone, such as a bind mount or a symlink, is not enough.
+  This option only disables the check, and Sulka does not set up the writable location.
