@@ -102,6 +102,24 @@ When that happens, the pattern is to add a small integration layer that reconcil
 `meta-sulka-raspberrypi <https://codeberg.org/AltidSec/meta-sulka-raspberrypi>`_ is the reference for this.
 It applies the Sulka kernel hardening to the board's own kernel recipe, restores the security modules that the board's defconfig strips out, disables the options for hardware the board does not have, and supplies the bootloader configuration the board needs in order to still boot under the Sulka U-Boot hardening.
 
+The kernel hardening is applied by inheriting ``sulka-kernel-hardening`` from ``meta-sulka-kernel`` in a bbappend for the kernel recipe.
+If you are using ``linux-yocto`` recipe for the kernel, the bbappend in ``meta-sulka-kernel`` does this for you, so you don't manually need to integrate the metadata into your recipe.
+
+The ``sulka-kernel-hardening`` class selects features both from its own kernel metadata and from the `yocto-kernel-cache <https://git.yoctoproject.org/yocto-kernel-cache>`_.
+The kernel recipe therefore has to inherit ``kernel-yocto`` and fetch the yocto-kernel-cache as a ``kmeta`` source, as ``linux-yocto`` and, for example, ``linux-raspberrypi`` do.
+``kernel-yocto`` is the class that applies the ``kmeta`` sources and ``KERNEL_FEATURES`` to the kernel configuration.
+Check that the hardening options are set in the ``.config`` of the kernel build directory.
+
+If your kernel recipe does not fetch the cache, add it in the bbappend, using the cache branch that matches the kernel version:
+
+.. code-block::
+
+  KMETA = "kernel-meta"
+  SRC_URI += "git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-6.18;destsuffix=${KMETA};protocol=https"
+  SRCREV_meta = "<commit from the yocto-6.18 branch>"
+
+Without the cache, the kernel configuration fails with ``Feature '...' not found``.
+
 An integration layer has to win over the Sulka layers where they disagree, so give it a higher ``BBFILE_PRIORITY``.
 The Sulka layers use priorities ``10`` and ``11``, and ``meta-sulka-raspberrypi`` uses ``15``.
 
