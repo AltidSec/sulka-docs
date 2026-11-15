@@ -157,7 +157,7 @@ The firewall is often the first to show it, as the ``nftables`` service fails at
 
 This happens when new keys are generated at the same path while the shared state cache holds modules signed with the old ones, for example when each build job generates its own keys and the jobs share a cache.
 The task hashes of the kernel normally contain only the paths of the keys, so the module packages are restored from the cache, while the kernel can be built again with the new keys, for example when the initramfs is bundled into it.
-``meta-sulka-kernel`` adds the contents of the keys to the task hashes of the kernels that inherit ``sulka-kernel-hardening``, so new keys build the kernel and its modules again.
+``meta-sulka-kernel`` adds the contents of the module signing certificate and the IMA root CA to the task hashes of the kernels that inherit ``sulka-kernel-hardening``, so new keys build the kernel and its modules again.
 A kernel recipe that does not inherit the class can still mix them.
 
 **Fixing it.** When builds share a shared state cache, generate the keys once and point every build at them.
