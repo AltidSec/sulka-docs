@@ -566,6 +566,18 @@ U-Boot also prints the following warning at startup:
 This is expected.
 U-Boot for the QEMU arm machines normally uses the device tree QEMU passes to it, but the reference builds the device tree into U-Boot, so that it carries the public key.
 
+CVE Check
+*********
+
+Every image build checks the image SBOM for known CVEs with ``sbom-cve-check``, and deploys the reports next to the image.
+The CVE databases follow their latest upstream revisions by default.
+To get reproducible reports, pin them in your build configuration:
+
+.. code-block::
+
+  SRCREV:pn-sbom-cve-check-update-nvd-native = "<commit>"
+  SRCREV:pn-sbom-cve-check-update-cvelist-native = "<commit>"
+
 Configuration Variables
 ***********************
 
