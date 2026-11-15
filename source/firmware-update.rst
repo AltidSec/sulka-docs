@@ -90,7 +90,7 @@ The actual steps to perform the update are as follows:
          <PATH_TO_IMAGES>/core-image-base-raspberrypi4-64.rootfs.rugixb \
          <PATH_TO_KEYS>/signer.crt \
          <PATH_TO_KEYS>/signer.key \
-         core-image-base-raspberrypi4-64.rootfs.signed.rugixb
+         ./core-image-base-raspberrypi4-64.rootfs.signed.rugixb
 
    For production setups, it is recommended to use PKCS#11 for signing. For further details, see `Rugix's documentation <https://rugix.org/docs/ctrl/signed-updates/>`_.
 
